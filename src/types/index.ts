@@ -1,5 +1,5 @@
 export interface Product {
-  images: any;
+  images: unknown[];
   id: string;
   name: string;
   stock_quantity: number;

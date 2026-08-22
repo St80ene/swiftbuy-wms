@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useInventory } from '../../context/InventoryContextProvider';
 import type { Product } from '../../types';
 import { ProductCatalogTable } from './ProductCatalogueTable';
+import { useQuery } from '@tanstack/react-query';
+import { productService } from '../../services/products';
+import ProductSearch from './ProductSearch';
+import useDebouncedValue from '../../hooks/debounceHook';
 
 const UOM_MAP = {
   UNIT: { base: 'pcs', display: 'pcs' },
@@ -13,13 +17,25 @@ type UomType = keyof typeof UOM_MAP;
 
 // Extend your product map presentation to optionally handle image paths
 interface ProductWithImage extends Product {
-  image_url?: string;
+  images?: unknown[];
 }
 
 export const Products: React.FC = () => {
   const { products, formatStock, setProducts } = useInventory();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [page, setPage] = useState(1);
+  const [limit] = useState(7);
+  const [order, setOrder] = useState<'ASC' | 'DESC'>('DESC');
+  const [search, setSearch] = useState('');
+
+  const debouncedSearch = useDebouncedValue(search.trim(), 350);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
 
   const [formData, setFormData] = useState({
     name: '',
@@ -30,6 +46,33 @@ export const Products: React.FC = () => {
     cost_price: '',
     selling_price: '',
   });
+
+  const { data, isLoading, isError, error, isFetching, isPlaceholderData } =
+    useQuery({
+      queryKey: ['products', { page, limit, order, search: debouncedSearch }],
+      queryFn: () =>
+        productService.getAllProducts({
+          page,
+          limit,
+          sortBy: 'createdAt',
+          order,
+          search: debouncedSearch,
+        }),
+      placeholderData: (previousData) => previousData,
+    });
+
+  //   const createProductMutation = useMutation({
+  //   mutationFn: (newProductData) => productService.createProduct(newProductData),
+  //   onSuccess: () => {
+  //     // Automatically triggers a background re-fetch of the product catalog
+  //     queryClient.invalidateQueries({ queryKey: ['products'] });
+  //     setIsModalOpen(false); // Close your modal on success
+  //     resetForm(); // Helper to clear inputs
+  //   },
+  //   onError: (err) => {
+  //     console.error('Failed to create product:', err);
+  //   }
+  // });
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -48,7 +91,7 @@ export const Products: React.FC = () => {
     const newProduct: ProductWithImage = {
       id: `p${products.length + 1}`,
       name: formData.name,
-      image_url: formData.image_url || undefined, // Store user provided link
+      // images: formData.image_url ? [formData.image_url] : [], // Store user provided link
       uom_type: formData.uom_type,
       uom_base_name: uomMeta.base,
       uom_display_name: uomMeta.display,
@@ -96,10 +139,18 @@ export const Products: React.FC = () => {
         </button>
       </div>
 
-      {/* Main Table Layout */}
+      <ProductSearch
+        value={search}
+        onChange={handleSearchChange}
+        isFetching={isFetching}
+      />
+
+      {/* Catalogue View */}
       <ProductCatalogTable
-        products={products}
-        onSelectProduct={(product) => console.log(product)}
+        products={data?.products || []}
+        meta={data?.meta}
+        onPageChange={(newPage) => setPage(newPage)}
+        isPlaceholderData={isPlaceholderData}
       />
 
       {/* Modal View Block */}
