@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  /* Enforce smooth cross-browser font rendering */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  /* Match our dark canvas theme globally to prevent unstyled flash on load */
+  background-color: #000000;
+}
+
+/* Custom fade-in utility used by our views during navigation transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
