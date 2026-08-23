@@ -2,7 +2,7 @@ import React from 'react';
 import { useInventory } from '../context/InventoryContextProvider';
 import { Orders } from '../components/Orders';
 import { Dashboard } from '../components/Dashboard';
-import { Products } from '../components/Products/Products';
+import { Products } from '../components/Products';
 
 type TabId = 'dashboard' | 'products' | 'orders';
 

@@ -22,6 +22,7 @@ export const productService = {
       page = 1,
       limit = 10,
       search = '',
+      order = 'DESC',
 
       // sortBy = 'createdAt',
       // order = 'DESC',
@@ -36,7 +37,7 @@ export const productService = {
           limit,
           search,
           // sortBy,
-          // order,
+          order,
           // ...(category && { category }), // Conditionally appends key if filter exists
         },
       },
@@ -68,7 +69,7 @@ export const productService = {
   /**
    * Sends a payload blueprint to the backend service to generate a new product asset.
    */
-  createProduct: async (productData: Product): Promise<Product> => {
+  createProduct: async (productData: FormData): Promise<Product> => {
     const response = await apiClient.post<ApiResponse<Product>>(
       PRODUCTS_RESOURCE,
       productData,

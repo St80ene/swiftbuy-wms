@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Product } from '../../types';
 import { UomDisplayName, UomType } from '../../enum/product';
+import { ArrowUp, ArrowDown, ArrowUpDown, PackageSearch } from 'lucide-react';
 
 // Define the exact meta interface matching your NestJS backend
 interface PaginationMeta {
@@ -15,26 +16,25 @@ interface PaginationMeta {
 
 interface ProductDisplayTableProps {
   products: Product[];
+  order: 'ASC' | 'DESC';
   meta?: PaginationMeta; // Accepts the backend pagination metrics
   onPageChange?: (newPage: number) => void; // Event callback handler
   isPlaceholderData?: boolean; // Fades table slightly while fetching next page
   onSelectProduct?: (product: Product) => void;
+  onOrderChange?: (newOrder: 'ASC' | 'DESC') => void;
 }
 
 export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
   products,
   meta,
+  order,
   onPageChange,
   isPlaceholderData = false,
   onSelectProduct,
+  onOrderChange,
 }) => {
   /**
    * Converts backend base-unit quantities into human-readable values.
-   *
-   * Example:
-   * 3000 G  -> 3 KG
-   * 1500 ML -> 1.5 L
-   * 25 PCS  -> 25 PCS
    */
   const formatQuantity = (
     quantity: number,
@@ -74,12 +74,14 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
     }).format(amount);
   };
 
+  const handleSortToggle = () => {
+    if (onOrderChange) {
+      onOrderChange(order === 'ASC' ? 'DESC' : 'ASC');
+    }
+  };
+
   /**
-   * Pagination range.
-   *
-   * Page 1 -> Showing 1–10 of 100
-   * Page 2 -> Showing 11–20 of 100
-   * Page 3 -> Showing 21–30 of 100
+   * Pagination calculation range.
    */
   const itemsPerPage = meta?.itemsPerPage ?? meta?.limit ?? products.length;
 
@@ -108,18 +110,41 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
               <th className="px-4 py-3">Stock</th>
               <th className="px-4 py-3">Cost</th>
               <th className="px-4 py-3">Selling Price</th>
-              <th className="px-4 py-3 text-center">Status</th>
+              <th className="px-4 py-3 text-center">
+                <button
+                  type="button"
+                  onClick={handleSortToggle}
+                  className="inline-flex items-center gap-1.5 uppercase font-bold hover:text-slate-900 transition-colors cursor-pointer mx-auto"
+                >
+                  Status
+                  {order === 'ASC' ? (
+                    <ArrowUp className="w-3.5 h-3.5 text-blue-600" />
+                  ) : order === 'DESC' ? (
+                    <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
+                  ) : (
+                    <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </button>
+              </th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-slate-100">
             {products.length === 0 ? (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-12 text-center text-slate-400"
-                >
-                  <p className="text-sm">No products found in catalog.</p>
+                <td colSpan={5} className="px-4 py-16 text-center">
+                  <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
+                    <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3 border border-slate-200/60">
+                      <PackageSearch className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-800 mb-1">
+                      No products found
+                    </h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      We couldn’t find any items matching your criteria. Try
+                      adjusting your search query or clear the active filters.
+                    </p>
+                  </div>
                 </td>
               </tr>
             ) : (

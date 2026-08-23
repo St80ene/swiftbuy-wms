@@ -1,0 +1,452 @@
+import React, {
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
+import { UomType, UomBaseName, UomDisplayName } from '../../../enum/product';
+
+// Map UOM Types to allowed Base and Display options
+const UOM_CONFIG: Record<
+  UomType,
+  {
+    defaultBase: UomBaseName;
+    allowedDisplay: UomDisplayName[];
+  }
+> = {
+  [UomType.UNIT]: {
+    defaultBase: UomBaseName.PCS,
+    allowedDisplay: [UomDisplayName.PCS],
+  },
+  [UomType.WEIGHT]: {
+    defaultBase: UomBaseName.G,
+    allowedDisplay: [UomDisplayName.G, UomDisplayName.KG],
+  },
+  [UomType.VOLUME]: {
+    defaultBase: UomBaseName.ML,
+    allowedDisplay: [UomDisplayName.ML, UomDisplayName.L],
+  },
+};
+
+export interface CreateProductFormData {
+  name: string;
+  description: string;
+  reorder_level: string;
+  cost_price: string;
+  selling_price: string;
+  uom_type: UomType;
+  uom_base_name: UomBaseName;
+  uom_display_name: UomDisplayName;
+  images: File[];
+}
+
+interface AddProductModalProps {
+  isSubmitting: boolean;
+  setIsModalOpen: Dispatch<SetStateAction<boolean>>;
+  onSubmit: (formData: FormData) => void | Promise<void>;
+}
+
+const MAX_IMAGES = 5;
+
+export default function AddProductModal({
+  isSubmitting,
+  setIsModalOpen,
+  onSubmit,
+}: AddProductModalProps) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [formData, setFormData] = useState<CreateProductFormData>({
+    name: '',
+    description: '',
+    reorder_level: '5',
+    cost_price: '0.00',
+    selling_price: '0.00',
+    uom_type: UomType.UNIT,
+    uom_base_name: UomBaseName.PCS,
+    uom_display_name: UomDisplayName.PCS,
+    images: [],
+  });
+
+  const [error, setError] = useState<string>('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Synchronous, memory-safe preview creation using useMemo
+  const previews = useMemo(() => {
+    return formData.images.map((file) => URL.createObjectURL(file));
+  }, [formData.images]);
+
+  // Clean up object URLs when unmounted or images change
+  React.useEffect(() => {
+    return () => {
+      previews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previews]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
+    const { name, value } = e.target;
+
+    if (name === 'uom_type') {
+      const newUomType = value as UomType;
+      const config = UOM_CONFIG[newUomType];
+
+      setFormData((prev) => ({
+        ...prev,
+        uom_type: newUomType,
+        uom_base_name: config.defaultBase,
+        uom_display_name: config.allowedDisplay[0],
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
+    const selectedFiles = Array.from(e.target.files);
+    const availableSlots = MAX_IMAGES - formData.images.length;
+
+    if (availableSlots <= 0) return;
+
+    const filesToAdd = selectedFiles.slice(0, availableSlots);
+
+    setFormData((prev) => ({
+      ...prev,
+      images: [...prev.images, ...filesToAdd],
+    }));
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    const errors: Record<string, string> = {};
+
+    if (!formData.name.trim()) errors.name = 'Product name is required';
+    if (!formData.selling_price || Number(formData.selling_price) <= 0) {
+      errors.selling_price = 'Valid selling price required';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    // Prepare multipart FormData payload for NestJS controller
+    const submitPayload: FormData = new FormData();
+    submitPayload.append('name', formData.name.trim());
+    if (formData.description.trim()) {
+      submitPayload.append('description', formData.description.trim());
+    }
+    submitPayload.append('reorder_level', formData.reorder_level);
+    submitPayload.append('cost_price', formData.cost_price);
+    submitPayload.append('selling_price', formData.selling_price);
+    submitPayload.append('uom_type', formData.uom_type);
+    submitPayload.append('uom_base_name', formData.uom_base_name);
+    submitPayload.append('uom_display_name', formData.uom_display_name);
+
+    formData.images.forEach((file) => {
+      submitPayload.append('images', file);
+    });
+
+    onSubmit(submitPayload);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-xl max-h-[90vh] rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">
+              Add Product to Shelves
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Register a new commercial SKU.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(false)}
+            disabled={isSubmitting}
+            className="text-slate-400 hover:text-slate-600 text-sm cursor-pointer disabled:opacity-50"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Form */}
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-73px)]"
+        >
+          {/* Error Banner */}
+          {error && (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs text-rose-700">
+              {error}
+            </div>
+          )}
+
+          {/* Product Name */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Product Name <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              maxLength={150}
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="e.g. Premium Coffee Beans"
+              className={`w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden transition-all ${
+                fieldErrors.name
+                  ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
+                  : 'border-slate-200 focus:border-blue-500 focus:bg-white'
+              }`}
+            />
+            {fieldErrors.name && (
+              <p className="text-[11px] text-rose-600 mt-1 font-medium">
+                {fieldErrors.name}
+              </p>
+            )}
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Description{' '}
+              <span className="text-slate-400 font-normal">(Optional)</span>
+            </label>
+            <textarea
+              name="description"
+              rows={2}
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder="Brief product notes or specification..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all resize-none"
+            />
+          </div>
+
+          {/* Product Images */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700">
+                Product Images
+              </label>
+              <span className="text-[10px] text-slate-400">
+                {formData.images.length}/{MAX_IMAGES}
+              </span>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={handleImageChange}
+              disabled={isSubmitting || formData.images.length >= MAX_IMAGES}
+              className="hidden"
+            />
+
+            <button
+              type="button"
+              disabled={isSubmitting || formData.images.length >= MAX_IMAGES}
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full border-2 border-dashed border-slate-200 rounded-lg px-4 py-5 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <div className="text-xl mb-1">📷</div>
+              <p className="text-xs font-medium text-slate-700">
+                Click to upload images
+              </p>
+              <p className="text-[10px] text-slate-400 mt-1">
+                JPG, PNG or WebP · Max 5MB each
+              </p>
+            </button>
+
+            {/* Image Previews Grid */}
+            {previews.length > 0 && (
+              <div className="grid grid-cols-5 gap-2 mt-3">
+                {previews.map((preview, index) => (
+                  <div
+                    key={`${preview}-${index}`}
+                    className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-100"
+                  >
+                    <img
+                      src={preview}
+                      alt={`Product preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      disabled={isSubmitting}
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-900/70 text-white text-[10px] flex items-center justify-center hover:bg-rose-600 transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Unit of Measure Group (Type, Base Name, Display Name) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                UOM Type
+              </label>
+              <select
+                name="uom_type"
+                value={formData.uom_type}
+                onChange={handleInputChange}
+                disabled={isSubmitting}
+                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 transition-all cursor-pointer"
+              >
+                <option value={UomType.UNIT}>UNIT</option>
+                <option value={UomType.WEIGHT}>WEIGHT</option>
+                <option value={UomType.VOLUME}>VOLUME</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Base Unit
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={formData.uom_base_name.toLocaleUpperCase()}
+                className="w-full bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-500 cursor-not-allowed font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Display Unit
+              </label>
+              <input
+                name="uom_display_name"
+                type="text"
+                readOnly
+                value={formData.uom_display_name.toLocaleUpperCase()}
+                className="w-full bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-500 cursor-not-allowed font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Stock */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Reorder Level ({formData.uom_base_name})
+              </label>
+              <input
+                type="number"
+                name="reorder_level"
+                min="0"
+                step={formData.uom_type === UomType.UNIT ? '1' : 'any'}
+                value={formData.reorder_level}
+                onChange={handleInputChange}
+                placeholder="5"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Cost Price ($)
+              </label>
+              <input
+                type="number"
+                name="cost_price"
+                step="0.01"
+                min="0"
+                value={formData.cost_price}
+                onChange={handleInputChange}
+                placeholder="0.00"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Pricing */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Retail Price ($) <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="number"
+                name="selling_price"
+                step="0.01"
+                min="0"
+                value={formData.selling_price}
+                onChange={handleInputChange}
+                placeholder="0.00"
+                className={`w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden transition-all ${
+                  fieldErrors.selling_price
+                    ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
+                    : 'border-slate-200 focus:border-blue-500 focus:bg-white'
+                }`}
+              />
+              {fieldErrors.selling_price && (
+                <p className="text-[11px] text-rose-600 mt-1 font-medium">
+                  {fieldErrors.selling_price}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3 border-t border-slate-100 pt-5 mt-6">
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => setIsModalOpen(false)}
+              className="flex-1 border border-slate-200 text-slate-600 text-xs font-semibold py-2.5 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 bg-blue-600 text-white text-xs font-semibold py-2.5 rounded-lg hover:bg-blue-700 transition-all disabled:bg-blue-400 shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Creating Product...
+                </>
+              ) : (
+                'Create Product'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
