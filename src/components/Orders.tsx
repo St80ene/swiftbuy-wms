@@ -1,57 +1,117 @@
-import React from 'react';
-import { useInventory } from '../context/InventoryContextProvider';
-import type { PurchaseOrder } from '../types';
+import React, { useState } from 'react';
+
+type PurchaseOrderStatus = 'DRAFT' | 'APPROVED' | 'RECEIVED' | 'CANCELLED';
+
+interface PurchaseOrder {
+  id: string;
+  po_number: string;
+  supplier_name: string;
+  total_estimated_cost: number;
+  status: PurchaseOrderStatus;
+}
+
+const initialPurchaseOrders: PurchaseOrder[] = [
+  {
+    id: 'po-001',
+    po_number: 'PO-2026-001',
+    supplier_name: 'Global Packaging Ltd.',
+    total_estimated_cost: 1250.5,
+    status: 'DRAFT',
+  },
+  {
+    id: 'po-002',
+    po_number: 'PO-2026-002',
+    supplier_name: 'Prime Retail Supplies',
+    total_estimated_cost: 840.0,
+    status: 'APPROVED',
+  },
+  {
+    id: 'po-003',
+    po_number: 'PO-2026-003',
+    supplier_name: 'Industrial Distribution Co.',
+    total_estimated_cost: 2340.75,
+    status: 'RECEIVED',
+  },
+];
 
 export const Orders: React.FC = () => {
-  const { purchaseOrders, approveOrder, receiveOrder } = useInventory();
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(
+    initialPurchaseOrders,
+  );
 
-  // Configuration map for action button elements based on status phase
-  const getStatusAction = (po: PurchaseOrder) => {
-    const statusConfig: Record<
-      string,
-      {
-        text: string;
-        className: string;
-        onClick?: () => void;
-        isButton: boolean;
-      }
-    > = {
-      DRAFT: {
-        text: 'Authorize Pipeline',
-        className:
-          'bg-blue-600 hover:bg-blue-700 text-white shadow-xs px-3 py-1.5 rounded-lg transition-all',
-        onClick: () => approveOrder(po.id),
-        isButton: true,
-      },
-      APPROVED: {
-        text: 'Log Dock Receipt',
-        className:
-          'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs px-3 py-1.5 rounded-lg transition-all',
-        onClick: () => receiveOrder(po.id),
-        isButton: true,
-      },
-      RECEIVED: {
-        text: 'Settled & Verified',
-        className: 'text-slate-400 font-medium italic',
-        isButton: false,
-      },
-    };
-
-    const current = statusConfig[po.status];
-    if (!current) return null;
-
-    return current.isButton ? (
-      <button
-        onClick={current.onClick}
-        className={`cursor-pointer text-xs font-medium ${current.className}`}
-      >
-        {current.text}
-      </button>
-    ) : (
-      <span className={`cursor-pointer text-xs ${current.className}`}>
-        {current.text}
-      </span>
+  const approveOrder = (orderId: string) => {
+    setPurchaseOrders((previousOrders) =>
+      previousOrders.map((order) =>
+        order.id === orderId ? { ...order, status: 'APPROVED' } : order,
+      ),
     );
+  };
+
+  const receiveOrder = (orderId: string) => {
+    setPurchaseOrders((previousOrders) =>
+      previousOrders.map((order) =>
+        order.id === orderId ? { ...order, status: 'RECEIVED' } : order,
+      ),
+    );
+  };
+
+  const getStatusAction = (po: PurchaseOrder) => {
+    switch (po.status) {
+      case 'DRAFT':
+        return (
+          <button
+            type="button"
+            onClick={() => approveOrder(po.id)}
+            className="cursor-pointer text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-xs px-3 py-1.5 rounded-lg transition-all"
+          >
+            Authorize Pipeline
+          </button>
+        );
+
+      case 'APPROVED':
+        return (
+          <button
+            type="button"
+            onClick={() => receiveOrder(po.id)}
+            className="cursor-pointer text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs px-3 py-1.5 rounded-lg transition-all"
+          >
+            Log Dock Receipt
+          </button>
+        );
+
+      case 'RECEIVED':
+        return (
+          <span className="text-xs text-slate-400 font-medium italic">
+            Settled & Verified
+          </span>
+        );
+
+      case 'CANCELLED':
+        return (
+          <span className="text-xs text-rose-500 font-medium italic">
+            Cancelled
+          </span>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const getStatusClassName = (status: PurchaseOrderStatus) => {
+    switch (status) {
+      case 'DRAFT':
+        return 'bg-slate-50 border-slate-200 text-slate-500';
+
+      case 'APPROVED':
+        return 'bg-blue-50 border-blue-200 text-blue-700';
+
+      case 'RECEIVED':
+        return 'bg-emerald-50 border-emerald-200 text-emerald-700';
+
+      case 'CANCELLED':
+        return 'bg-rose-50 border-rose-200 text-rose-700';
+    }
   };
 
   return (
@@ -60,6 +120,7 @@ export const Orders: React.FC = () => {
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
           Procurement Pipelines
         </h2>
+
         <p className="text-sm text-slate-500 mt-0.5">
           Authorization and validation logs for commercial inventory inflow.
         </p>
@@ -77,6 +138,7 @@ export const Orders: React.FC = () => {
                 <th className="px-6 py-4 text-right">Corporate Action</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-slate-100">
               {purchaseOrders.map((po) => (
                 <tr
@@ -86,30 +148,45 @@ export const Orders: React.FC = () => {
                   <td className="px-6 py-4 font-mono text-xs text-blue-600 font-semibold">
                     {po.po_number}
                   </td>
+
                   <td className="px-6 py-4 text-slate-900 font-medium">
                     {po.supplier_name}
                   </td>
+
                   <td className="px-6 py-4 text-slate-900 font-semibold">
-                    ${po.total_estimated_cost.toFixed(2)}
+                    $
+                    {po.total_estimated_cost.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </td>
+
                   <td className="px-6 py-4">
                     <span
-                      className={`text-[11px] px-2.5 py-0.5 font-semibold rounded border ${
-                        po.status === 'DRAFT'
-                          ? 'bg-slate-50 border-slate-200 text-slate-500'
-                          : po.status === 'APPROVED'
-                            ? 'bg-blue-50 border-blue-200 text-blue-700'
-                            : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                      }`}
+                      className={`text-[11px] px-2.5 py-0.5 font-semibold rounded border ${getStatusClassName(
+                        po.status,
+                      )}`}
                     >
                       {po.status}
                     </span>
                   </td>
+
                   <td className="px-6 py-4 text-right">
                     {getStatusAction(po)}
                   </td>
                 </tr>
               ))}
+
+              {purchaseOrders.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-12 text-center text-slate-400"
+                  >
+                    No purchase orders found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
