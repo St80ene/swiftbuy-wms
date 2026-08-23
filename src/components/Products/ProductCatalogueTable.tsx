@@ -110,7 +110,7 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
               <th className="px-4 py-3">Stock</th>
               <th className="px-4 py-3">Cost</th>
               <th className="px-4 py-3">Selling Price</th>
-              <th className="px-4 py-3 text-center">
+              {/* <th className="px-4 py-3 text-center">
                 <button
                   type="button"
                   onClick={handleSortToggle}
@@ -125,7 +125,7 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
                     <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
                   )}
                 </button>
-              </th>
+              </th> */}
             </tr>
           </thead>
 
@@ -225,7 +225,7 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
                     </td>
 
                     {/* Status */}
-                    <td className="px-4 py-3 text-center">
+                    {/* <td className="px-4 py-3 text-center">
                       <span
                         className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider whitespace-nowrap ${
                           isDeficient
@@ -243,7 +243,7 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
 
                         {isDeficient ? 'Deficient' : 'Optimal'}
                       </span>
-                    </td>
+                    </td> */}
                   </tr>
                 );
               })

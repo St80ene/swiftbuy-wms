@@ -73,6 +73,11 @@ export const productService = {
     const response = await apiClient.post<ApiResponse<Product>>(
       PRODUCTS_RESOURCE,
       productData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
     );
     return response.data.data;
   },
@@ -84,6 +89,11 @@ export const productService = {
     const response = await apiClient.put<ApiResponse<Product>>(
       `${PRODUCTS_RESOURCE}/${productId}`,
       productData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
     );
     return response.data.data;
   },

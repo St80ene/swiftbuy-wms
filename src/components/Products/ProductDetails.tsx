@@ -17,9 +17,6 @@ import {
   Layers,
   Building2,
   Box,
-  X,
-  Save,
-  Upload,
 } from 'lucide-react';
 import { productService } from '../../services/products';
 import { LoadingScreen } from '../Error/LoadingScreen';
@@ -28,13 +25,14 @@ import EditProductModal from './modals/EditProduct';
 
 export default function ProductDetailsPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { productId } = useParams<{ productId: string }>();
 
   const [activeTab, setActiveTab] = useState<
     'overview' | 'relationships' | 'history'
   >('overview');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { data, isLoading, isError, error } = useQuery<Product>({
     queryKey: ['product', productId],
     queryFn: () => productService.getProductByID(productId!),
@@ -42,6 +40,19 @@ export default function ProductDetailsPage() {
   });
 
   const product = data;
+
+  const updateProductMutation = useMutation({
+    mutationFn: async (updatedProduct: FormData) => {
+      return await productService.updateProduct(productId!, updatedProduct);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['product', productId] });
+      setIsEditModalOpen(false);
+    },
+    onError: (error) => {
+      console.error('Failed to update product:', error);
+    },
+  });
 
   useEffect(() => {
     if (product?.name) {
@@ -85,7 +96,7 @@ export default function ProductDetailsPage() {
 
   const isOut = product.stock_quantity <= 0;
   const isLow =
-    product.is_low_stock === 1 ||
+    product.is_low_stock === true ||
     product.stock_quantity <= product.reorder_level;
 
   return (
@@ -282,18 +293,20 @@ export default function ProductDetailsPage() {
                 </h3>
                 {product.images && product.images.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {product.images.map((img, index) => (
-                      <div
-                        key={index}
-                        className="aspect-square rounded-lg overflow-hidden bg-slate-100 border border-slate-200"
-                      >
-                        <img
-                          src={img}
-                          alt={`${product.name} ${index}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
+                    {product.images?.map((imgObj, index) => {
+                      return (
+                        <div
+                          key={index}
+                          className="aspect-square rounded-lg overflow-hidden bg-slate-100 border border-slate-200"
+                        >
+                          <img
+                            src={imgObj.url} // Updated from '' to url
+                            alt={`${product.name} ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="h-44 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center text-slate-400">
@@ -409,11 +422,19 @@ export default function ProductDetailsPage() {
       </AnimatePresence>
 
       {/* Edit Product Modal */}
-      <EditProductModal
-        product={product}
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-      />
+      {isEditModalOpen && (
+        <EditProductModal
+          product={product}
+          isSubmitting={isSubmitting}
+          setIsModalOpen={setIsEditModalOpen}
+          onSubmit={async (updatedProduct) => {
+            // Guard clause: do nothing if request is already in-flight
+            if (updateProductMutation.isPending) return;
+
+            updateProductMutation.mutate(updatedProduct);
+          }}
+        />
+      )}
     </div>
   );
 }

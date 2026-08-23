@@ -1,360 +1,422 @@
-import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  X,
-  AlertTriangle,
-  Package,
-  DollarSign,
-  Tag,
-  Layers,
-  Upload,
-  Save,
-} from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { productService } from '../../../services/products';
+// components/products/EditProductModal.tsx
+import React, {
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
+import { UomType, UomBaseName, UomDisplayName } from '../../../enum/product';
+import BaseModal from '../../common/BaseModal';
 import type { Product } from '../../entities/product';
 
-function EditProductModal({
-  product,
-  isOpen,
-  onClose,
-}: {
+const MAX_IMAGES = 5;
+
+const UOM_CONFIG: Record<
+  UomType,
+  { defaultBase: UomBaseName; allowedDisplay: UomDisplayName[] }
+> = {
+  [UomType.UNIT]: {
+    defaultBase: UomBaseName.PCS,
+    allowedDisplay: [UomDisplayName.PCS],
+  },
+  [UomType.WEIGHT]: {
+    defaultBase: UomBaseName.G,
+    allowedDisplay: [UomDisplayName.G, UomDisplayName.KG],
+  },
+  [UomType.VOLUME]: {
+    defaultBase: UomBaseName.ML,
+    allowedDisplay: [UomDisplayName.ML, UomDisplayName.L],
+  },
+};
+
+interface EditProductModalProps {
   product: Product;
-  isOpen: boolean;
-  onClose: () => void;
-}) {
-  const queryClient = useQueryClient();
-  const [imageUrlInput, setImageUrlInput] = useState('');
+  isSubmitting: boolean;
+  setIsModalOpen: Dispatch<SetStateAction<boolean>>;
+  onSubmit: (formData: FormData) => void | Promise<void>;
+}
+
+export default function EditProductModal({
+  product,
+  isSubmitting,
+  setIsModalOpen,
+  onSubmit,
+}: EditProductModalProps) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Form State initialized directly from product prop (No useEffect required)
   const [formData, setFormData] = useState({
-    name: product.name,
-    description: product.description,
-    cost_price: product.cost_price,
-    selling_price: product.selling_price,
-    reorder_level: product.reorder_level,
-    uom_base_name: product.uom_base_name,
-    uom_display_name: product.uom_display_name,
-    uom_type: product.uom_type,
-    images: product.images || [],
+    name: product.name || '',
+    description: product.description || '',
+    reorder_level: String(product.reorder_level ?? '5'),
+    cost_price: String(product.cost_price ?? '0.00'),
+    selling_price: String(product.selling_price ?? '0.00'),
+    uom_type: product.uom_type || UomType.UNIT,
+    uom_base_name: product.uom_base_name || UomBaseName.PCS,
+    uom_display_name: product.uom_display_name || UomDisplayName.PCS,
   });
 
-  const updateMutation = useMutation({
-    mutationFn: (updatedData: typeof formData) =>
-      productService.updateProduct(product.id, updatedData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['product', product.id] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      onClose();
-    },
-  });
+  // Track existing image URLs from server vs newly added local Files
+  const [existingImages, setExistingImages] = useState<string[]>(
+    product.images || [],
+  );
+  const [newImages, setNewImages] = useState<File[]>([]);
 
-  const handleChange = (
+  const [error, setError] = useState<string>('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Generate memory-safe object URLs for newly added local files
+  const newPreviews = useMemo(() => {
+    return newImages.map((file) => URL.createObjectURL(file));
+  }, [newImages]);
+
+  // Clean up object URLs on unmount or file change
+  React.useEffect(() => {
+    return () => {
+      newPreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [newPreviews]);
+
+  const totalImageCount = existingImages.length + newImages.length;
+
+  const handleInputChange = (
     e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >,
   ) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'number' ? parseFloat(value) || 0 : value,
-    }));
-  };
+    const { name, value } = e.target;
 
-  const handleAddImage = () => {
-    if (imageUrlInput.trim()) {
+    if (name === 'uom_type') {
+      const newUomType = value as UomType;
+      const config = UOM_CONFIG[newUomType];
+
       setFormData((prev) => ({
         ...prev,
-        images: [...prev.images, imageUrlInput.trim()],
+        uom_type: newUomType,
+        uom_base_name: config.defaultBase,
+        uom_display_name: config.allowedDisplay[0],
       }));
-      setImageUrlInput('');
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
-  const handleRemoveImage = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
-    }));
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
+    const selectedFiles = Array.from(e.target.files);
+    const availableSlots = MAX_IMAGES - totalImageCount;
+
+    if (availableSlots <= 0) return;
+
+    const filesToAdd = selectedFiles.slice(0, availableSlots);
+    setNewImages((prev) => [...prev, ...filesToAdd]);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewImage = (index: number) => {
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateMutation.mutate(formData);
+    setError('');
+
+    console.log('Closing modal with form data:', formData);
+
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) errors.name = 'Product name is required';
+    if (!formData.selling_price || Number(formData.selling_price) <= 0) {
+      errors.selling_price = 'Valid selling price required';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    const submitPayload = new FormData();
+    submitPayload.append('name', formData.name.trim());
+    if (formData.description.trim()) {
+      submitPayload.append('description', formData.description.trim());
+    }
+    submitPayload.append('reorder_level', formData.reorder_level);
+    submitPayload.append('cost_price', formData.cost_price);
+    submitPayload.append('selling_price', formData.selling_price);
+    submitPayload.append('uom_type', formData.uom_type);
+    submitPayload.append('uom_base_name', formData.uom_base_name);
+    submitPayload.append('uom_display_name', formData.uom_display_name);
+
+    // Pass retained backend image URLs so server knows which existing images were kept
+    existingImages.forEach((url) => {
+      submitPayload.append('retained_images', url);
+    });
+
+    // Pass new binary files to be uploaded
+    newImages.forEach((file) => {
+      submitPayload.append('new_images', file);
+    });
+
+    onSubmit(submitPayload);
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-900/40 backdrop-blur-xs">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ duration: 0.2 }}
-            className="w-full max-w-2xl h-full bg-white shadow-2xl flex flex-col overflow-hidden"
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-200">
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">
-                  Edit Product Details
-                </h2>
-                <p className="text-xs text-slate-400 font-mono mt-0.5">
-                  ID: {product.id}
-                </p>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+    <BaseModal
+      title={`Edit ${product.name || 'Product'}`}
+      subtitle="Update product SKU details and images."
+      error={error}
+      isSubmitting={isSubmitting}
+      submitLabel="Update Product"
+      submittingLabel="Updating Product..."
+      onClose={() => setIsModalOpen(false)}
+      onSubmit={handleSubmit}
+    >
+      {/* Product Name */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+          Product Name <span className="text-rose-500">*</span>
+        </label>
+        <input
+          type="text"
+          name="name"
+          maxLength={150}
+          value={formData.name}
+          onChange={handleInputChange}
+          className={`w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden transition-all ${
+            fieldErrors.name
+              ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
+              : 'border-slate-200 focus:border-blue-500 focus:bg-white'
+          }`}
+        />
+        {fieldErrors.name && (
+          <p className="text-[11px] text-rose-600 mt-1 font-medium">
+            {fieldErrors.name}
+          </p>
+        )}
+      </div>
 
-            {/* Modal Form Content */}
-            <form
-              id="modal-edit-form"
-              onSubmit={handleSubmit}
-              className="flex-1 overflow-y-auto p-6 space-y-6"
-            >
-              {updateMutation.isError && (
-                <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center gap-3">
-                  <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                  <span>
-                    {updateMutation.error instanceof Error
-                      ? updateMutation.error.message
-                      : 'Failed to save product edits.'}
-                  </span>
-                </div>
-              )}
+      {/* Description */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+          Description{' '}
+          <span className="text-slate-400 font-normal">(Optional)</span>
+        </label>
+        <textarea
+          name="description"
+          rows={2}
+          value={formData.description}
+          onChange={handleInputChange}
+          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all resize-none"
+        />
+      </div>
 
-              {/* Basic Details */}
-              <div className="space-y-4">
-                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <Package className="w-4 h-4 text-slate-500" /> General Info
-                </h3>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Product Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    rows={3}
-                    value={formData.description}
-                    onChange={handleChange}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                  />
-                </div>
-              </div>
-
-              {/* Financials */}
-              <div className="space-y-4 pt-4 border-t border-slate-100">
-                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-slate-500" /> Pricing &
-                  Valuation
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Cost Price ($)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      name="cost_price"
-                      value={formData.cost_price}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Selling Price ($)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      name="selling_price"
-                      value={formData.selling_price}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Stock Controls */}
-              <div className="space-y-4 pt-4 border-t border-slate-100">
-                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-slate-500" /> Inventory Counts
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Stock Quantity
-                    </label>
-                    <input
-                      type="number"
-                      name="stock_quantity"
-                      value={formData.stock_quantity}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Reorder Level
-                    </label>
-                    <input
-                      type="number"
-                      name="reorder_level"
-                      value={formData.reorder_level}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* UOM */}
-              <div className="space-y-4 pt-4 border-t border-slate-100">
-                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-slate-500" /> Measurement
-                  Units
-                </h3>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      UOM Type
-                    </label>
-                    <select
-                      name="uom_type"
-                      value={formData.uom_type}
-                      onChange={handleChange}
-                      className="w-full px-2 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 bg-white cursor-pointer"
-                    >
-                      <option value="UNIT">UNIT</option>
-                      <option value="WEIGHT">WEIGHT</option>
-                      <option value="VOLUME">VOLUME</option>
-                      <option value="PACK">PACK</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Base UOM
-                    </label>
-                    <input
-                      type="text"
-                      name="uom_base_name"
-                      value={formData.uom_base_name}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">
-                      Display UOM
-                    </label>
-                    <input
-                      type="text"
-                      name="uom_display_name"
-                      value={formData.uom_display_name}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Images */}
-              <div className="space-y-4 pt-4 border-t border-slate-100">
-                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <Upload className="w-4 h-4 text-slate-500" /> Product Images
-                </h3>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={imageUrlInput}
-                    onChange={(e) => setImageUrlInput(e.target.value)}
-                    placeholder="Image URL..."
-                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddImage}
-                    className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium cursor-pointer"
-                  >
-                    Add
-                  </button>
-                </div>
-                {formData.images.length > 0 && (
-                  <div className="grid grid-cols-4 gap-3 pt-2">
-                    {formData.images.map((url, idx) => (
-                      <div
-                        key={idx}
-                        className="relative aspect-square rounded-lg border border-slate-200 overflow-hidden bg-slate-50"
-                      >
-                        <img
-                          src={url}
-                          alt={`Preview ${idx}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveImage(idx)}
-                          className="absolute top-1 right-1 p-1 bg-slate-900/70 hover:bg-rose-600 text-white rounded-full cursor-pointer"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </form>
-
-            {/* Modal Actions Footer */}
-            <div className="p-6 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 text-sm font-medium transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="modal-edit-form"
-                disabled={updateMutation.isPending}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 text-sm font-medium transition-colors shadow-sm cursor-pointer"
-              >
-                <Save className="w-4 h-4" />
-                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </motion.div>
+      {/* Product Images */}
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-xs font-semibold text-slate-700">
+            Product Images
+          </label>
+          <span className="text-[10px] text-slate-400">
+            {totalImageCount}/{MAX_IMAGES}
+          </span>
         </div>
-      )}
-    </AnimatePresence>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          onChange={handleImageChange}
+          disabled={isSubmitting || totalImageCount >= MAX_IMAGES}
+          className="hidden"
+        />
+
+        <button
+          type="button"
+          disabled={isSubmitting || totalImageCount >= MAX_IMAGES}
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full border-2 border-dashed border-slate-200 rounded-lg px-4 py-4 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          <div className="text-lg mb-0.5">📷</div>
+          <p className="text-xs font-medium text-slate-700">
+            Click to upload new images
+          </p>
+          <p className="text-[10px] text-slate-400 mt-0.5">
+            JPG, PNG or WebP · Max 5MB each
+          </p>
+        </button>
+
+        {/* Unified Image Grid (Server URLs + New Local Uploads) */}
+        {totalImageCount > 0 && (
+          <div className="grid grid-cols-5 gap-2 mt-3">
+            {/* Existing Server Images */}
+            {existingImages.map((url, index) => (
+              <div
+                key={`existing-${url}-${index}`}
+                className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-100 group"
+              >
+                <img
+                  src={url}
+                  alt={`Existing product ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute bottom-1 left-1 bg-slate-900/60 text-white text-[9px] px-1 rounded backdrop-blur-xs">
+                  Saved
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeExistingImage(index)}
+                  disabled={isSubmitting}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-900/70 text-white text-[10px] flex items-center justify-center hover:bg-rose-600 transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+
+            {/* Newly Added Local Files */}
+            {newPreviews.map((preview, index) => (
+              <div
+                key={`new-${preview}-${index}`}
+                className="relative aspect-square rounded-lg overflow-hidden border-2 border-blue-400 bg-slate-100"
+              >
+                <img
+                  src={preview}
+                  alt={`New upload preview ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute bottom-1 left-1 bg-blue-600 text-white text-[9px] px-1 rounded font-medium">
+                  New
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeNewImage(index)}
+                  disabled={isSubmitting}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-900/70 text-white text-[10px] flex items-center justify-center hover:bg-rose-600 transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Unit of Measure Group */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+            UOM Type
+          </label>
+          <select
+            name="uom_type"
+            value={formData.uom_type}
+            onChange={handleInputChange}
+            disabled={isSubmitting}
+            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 transition-all cursor-pointer"
+          >
+            <option value={UomType.UNIT}>UNIT</option>
+            <option value={UomType.WEIGHT}>WEIGHT</option>
+            <option value={UomType.VOLUME}>VOLUME</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+            Base Unit
+          </label>
+          <input
+            type="text"
+            readOnly
+            value={formData.uom_base_name.toLocaleUpperCase()}
+            className="w-full bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-500 cursor-not-allowed font-mono"
+          />
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+            Display Unit
+          </label>
+          <input
+            name="uom_display_name"
+            type="text"
+            readOnly
+            value={formData.uom_display_name.toLocaleUpperCase()}
+            className="w-full bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-500 cursor-not-allowed font-mono"
+          />
+        </div>
+      </div>
+
+      {/* Stock & Cost */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            Reorder Level ({formData.uom_base_name})
+          </label>
+          <input
+            type="number"
+            name="reorder_level"
+            min="0"
+            step={formData.uom_type === UomType.UNIT ? '1' : 'any'}
+            value={formData.reorder_level}
+            onChange={handleInputChange}
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            Cost Price ($)
+          </label>
+          <input
+            type="number"
+            name="cost_price"
+            step="0.01"
+            min="0"
+            value={formData.cost_price}
+            onChange={handleInputChange}
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all"
+          />
+        </div>
+      </div>
+
+      {/* Pricing */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            Retail Price ($) <span className="text-rose-500">*</span>
+          </label>
+          <input
+            type="number"
+            name="selling_price"
+            step="0.01"
+            min="0"
+            value={formData.selling_price}
+            onChange={handleInputChange}
+            className={`w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden transition-all ${
+              fieldErrors.selling_price
+                ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
+                : 'border-slate-200 focus:border-blue-500 focus:bg-white'
+            }`}
+          />
+          {fieldErrors.selling_price && (
+            <p className="text-[11px] text-rose-600 mt-1 font-medium">
+              {fieldErrors.selling_price}
+            </p>
+          )}
+        </div>
+      </div>
+    </BaseModal>
   );
 }
-
-export default EditProductModal;
