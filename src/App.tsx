@@ -4,7 +4,7 @@ import AppLayout from './layouts/AppLayout';
 
 import { Products } from './components/Products';
 import { Dashboard } from './components/Dashboard';
-// import ProductDetailsPage from './features/products/pages/ProductDetailsPage';
+import ProductDetails from './components/Products/ProductDetails';
 // import StocksPage from './features/stocks/pages/StocksPage';
 // import PurchaseOrdersPage from './features/purchase-orders/pages/PurchaseOrdersPage';
 
@@ -20,12 +20,8 @@ export default function App() {
           <Route path="/products" element={<Products />} />
 
           {/* Product details */}
-          {/* 
-          <Route
-            path="/products/:productId"
-            element={<ProductDetailsPage />}
-          />
-          */}
+
+          <Route path="/products/:productId" element={<ProductDetails />} />
 
           {/* Stocks */}
           {/* <Route path="/stocks" element={<StocksPage />} /> */}

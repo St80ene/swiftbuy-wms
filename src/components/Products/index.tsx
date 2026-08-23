@@ -7,10 +7,12 @@ import useDebouncedValue from '../../hooks/debounceHook';
 import { LoadingScreen } from '../Error/LoadingScreen';
 import { ErrorPage } from '../Error/ErrorPage';
 import AddProductModal from './modals/AddProductModal';
-import type { Product } from '../entities/product';
+import { useNavigate } from 'react-router-dom';
 
 export const Products: React.FC = () => {
   const queryClient = useQueryClient();
+
+  const navigate = useNavigate();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -118,6 +120,10 @@ export const Products: React.FC = () => {
         onOrderChange={setOrder}
         onPageChange={(newPage) => setPage(newPage)}
         isPlaceholderData={isPlaceholderData}
+        onSelectProduct={(product) => {
+          console.log('Selected product:', product);
+          navigate(`/products/${product.id}`);
+        }}
       />
 
       {/* Modal View Block */}

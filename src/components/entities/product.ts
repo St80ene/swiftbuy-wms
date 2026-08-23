@@ -15,4 +15,6 @@ export class Product {
   uom_base_name!: UomBaseName; // 'pcs', 'g', 'ml'
   uom_display_name!: UomDisplayName; // 'pcs', 'kg', 'L'
   createdAt!: Date;
+  updatedAt!: Date;
+  deletedAt?: Date | null;
 }
