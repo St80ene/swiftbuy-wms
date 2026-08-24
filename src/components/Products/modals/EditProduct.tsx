@@ -1,3 +1,4 @@
+// components/products/EditProductModal.tsx
 import React, {
   useMemo,
   useRef,
@@ -7,6 +8,9 @@ import React, {
 } from 'react';
 import { UomType, UomBaseName, UomDisplayName } from '../../../enum/product';
 import BaseModal from '../../common/BaseModal';
+import type { Product } from '../../entities/product';
+
+const MAX_IMAGES = 5;
 
 const UOM_CONFIG: Record<
   UomType,
@@ -26,57 +30,55 @@ const UOM_CONFIG: Record<
   },
 };
 
-export interface CreateProductFormData {
-  name: string;
-  description: string;
-  reorder_level: string;
-  cost_price: string;
-  selling_price: string;
-  uom_type: UomType;
-  uom_base_name: UomBaseName;
-  uom_display_name: UomDisplayName;
-  images: File[];
-}
-
-interface AddProductModalProps {
+interface EditProductModalProps {
+  product: Product;
   isSubmitting: boolean;
   setIsModalOpen: Dispatch<SetStateAction<boolean>>;
   onSubmit: (formData: FormData) => void | Promise<void>;
 }
 
-const MAX_IMAGES = 5;
-
-export default function AddProductModal({
+export default function EditProductModal({
+  product,
   isSubmitting,
   setIsModalOpen,
   onSubmit,
-}: AddProductModalProps) {
+}: EditProductModalProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [formData, setFormData] = useState<CreateProductFormData>({
-    name: '',
-    description: '',
-    reorder_level: '5',
-    cost_price: '0.00',
-    selling_price: '0.00',
-    uom_type: UomType.UNIT,
-    uom_base_name: UomBaseName.PCS,
-    uom_display_name: UomDisplayName.PCS,
-    images: [],
+  // Form State initialized directly from product prop (No useEffect required)
+  const [formData, setFormData] = useState({
+    name: product.name || '',
+    description: product.description || '',
+    reorder_level: String(product.reorder_level ?? '5'),
+    cost_price: String(product.cost_price ?? '0.00'),
+    selling_price: String(product.selling_price ?? '0.00'),
+    uom_type: product.uom_type || UomType.UNIT,
+    uom_base_name: product.uom_base_name || UomBaseName.PCS,
+    uom_display_name: product.uom_display_name || UomDisplayName.PCS,
   });
+
+  // Track existing image URLs from server vs newly added local Files
+  const [existingImages, setExistingImages] = useState<string[]>(
+    product.images || [],
+  );
+  const [newImages, setNewImages] = useState<File[]>([]);
 
   const [error, setError] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const previews = useMemo(() => {
-    return formData.images.map((file) => URL.createObjectURL(file));
-  }, [formData.images]);
+  // Generate memory-safe object URLs for newly added local files
+  const newPreviews = useMemo(() => {
+    return newImages.map((file) => URL.createObjectURL(file));
+  }, [newImages]);
 
+  // Clean up object URLs on unmount or file change
   React.useEffect(() => {
     return () => {
-      previews.forEach((url) => URL.revokeObjectURL(url));
+      newPreviews.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [previews]);
+  }, [newPreviews]);
+
+  const totalImageCount = existingImages.length + newImages.length;
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -108,27 +110,24 @@ export default function AddProductModal({
     if (!e.target.files) return;
 
     const selectedFiles = Array.from(e.target.files);
-    const availableSlots = MAX_IMAGES - formData.images.length;
+    const availableSlots = MAX_IMAGES - totalImageCount;
 
     if (availableSlots <= 0) return;
 
     const filesToAdd = selectedFiles.slice(0, availableSlots);
-
-    setFormData((prev) => ({
-      ...prev,
-      images: [...prev.images, ...filesToAdd],
-    }));
+    setNewImages((prev) => [...prev, ...filesToAdd]);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const removeImage = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
-    }));
+  const removeExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewImage = (index: number) => {
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -136,7 +135,6 @@ export default function AddProductModal({
     setError('');
 
     const errors: Record<string, string> = {};
-
     if (!formData.name.trim()) errors.name = 'Product name is required';
     if (!formData.selling_price || Number(formData.selling_price) <= 0) {
       errors.selling_price = 'Valid selling price required';
@@ -148,18 +146,47 @@ export default function AddProductModal({
     }
 
     const submitPayload = new FormData();
-    submitPayload.append('name', formData.name.trim());
-    if (formData.description.trim()) {
-      submitPayload.append('description', formData.description.trim());
-    }
-    submitPayload.append('reorder_level', formData.reorder_level);
-    submitPayload.append('cost_price', formData.cost_price);
-    submitPayload.append('selling_price', formData.selling_price);
-    submitPayload.append('uom_type', formData.uom_type);
-    submitPayload.append('uom_base_name', formData.uom_base_name);
-    submitPayload.append('uom_display_name', formData.uom_display_name);
 
-    formData.images.forEach((file) => {
+    // Helper to append only if value has changed
+    const appendIfChanged = (
+      key: string,
+      newValue: string,
+      originalValue: unknown,
+    ) => {
+      const trimmedNew = newValue.trim();
+      const trimmedOriginal = String(originalValue ?? '').trim();
+      if (trimmedNew !== trimmedOriginal) {
+        submitPayload.append(key, trimmedNew);
+      }
+    };
+
+    appendIfChanged('name', formData.name, product.name);
+    appendIfChanged('description', formData.description, product.description);
+    appendIfChanged(
+      'reorder_level',
+      formData.reorder_level,
+      product.reorder_level,
+    );
+    appendIfChanged('cost_price', formData.cost_price, product.cost_price);
+    appendIfChanged(
+      'selling_price',
+      formData.selling_price,
+      product.selling_price,
+    );
+    appendIfChanged('uom_type', formData.uom_type, product.uom_type);
+    appendIfChanged(
+      'uom_base_name',
+      formData.uom_base_name,
+      product.uom_base_name,
+    );
+    appendIfChanged(
+      'uom_display_name',
+      formData.uom_display_name,
+      product.uom_display_name,
+    );
+
+    // Append new binary files if added
+    newImages.forEach((file) => {
       submitPayload.append('images', file);
     });
 
@@ -168,12 +195,12 @@ export default function AddProductModal({
 
   return (
     <BaseModal
-      title="Add Product to Shelves"
-      subtitle="Register a new commercial SKU."
+      title={`Edit ${product.name || 'Product'}`}
+      subtitle="Update product SKU details and images."
       error={error}
       isSubmitting={isSubmitting}
-      submitLabel="Create Product"
-      submittingLabel="Creating Product..."
+      submitLabel="Update Product"
+      submittingLabel="Updating Product..."
       onClose={() => setIsModalOpen(false)}
       onSubmit={handleSubmit}
     >
@@ -188,7 +215,6 @@ export default function AddProductModal({
           maxLength={150}
           value={formData.name}
           onChange={handleInputChange}
-          placeholder="e.g. Premium Coffee Beans"
           className={`w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden transition-all ${
             fieldErrors.name
               ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
@@ -213,7 +239,6 @@ export default function AddProductModal({
           rows={2}
           value={formData.description}
           onChange={handleInputChange}
-          placeholder="Brief product notes or specification..."
           className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all resize-none"
         />
       </div>
@@ -225,7 +250,7 @@ export default function AddProductModal({
             Product Images
           </label>
           <span className="text-[10px] text-slate-400">
-            {formData.images.length}/{MAX_IMAGES}
+            {totalImageCount}/{MAX_IMAGES}
           </span>
         </div>
 
@@ -235,43 +260,72 @@ export default function AddProductModal({
           accept="image/jpeg,image/png,image/webp"
           multiple
           onChange={handleImageChange}
-          disabled={isSubmitting || formData.images.length >= MAX_IMAGES}
+          disabled={isSubmitting || totalImageCount >= MAX_IMAGES}
           className="hidden"
         />
 
         <button
           type="button"
-          disabled={isSubmitting || formData.images.length >= MAX_IMAGES}
+          disabled={isSubmitting || totalImageCount >= MAX_IMAGES}
           onClick={() => fileInputRef.current?.click()}
-          className="w-full border-2 border-dashed border-slate-200 rounded-lg px-4 py-5 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="w-full border-2 border-dashed border-slate-200 rounded-lg px-4 py-4 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          <div className="text-xl mb-1">📷</div>
+          <div className="text-lg mb-0.5">📷</div>
           <p className="text-xs font-medium text-slate-700">
-            Click to upload images
+            Click to upload new images
           </p>
-          <p className="text-[10px] text-slate-400 mt-1">
+          <p className="text-[10px] text-slate-400 mt-0.5">
             JPG, PNG or WebP · Max 5MB each
           </p>
         </button>
 
-        {/* Image Previews Grid */}
-        {previews.length > 0 && (
+        {/* Unified Image Grid (Server URLs + New Local Uploads) */}
+        {totalImageCount > 0 && (
           <div className="grid grid-cols-5 gap-2 mt-3">
-            {previews.map((preview, index) => (
+            {/* Existing Server Images */}
+            {existingImages.map((url, index) => (
               <div
-                key={`${preview}-${index}`}
-                className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-100"
+                key={`existing-${url}-${index}`}
+                className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-100 group"
+              >
+                <img
+                  src={url}
+                  alt={`Existing product ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute bottom-1 left-1 bg-slate-900/60 text-white text-[9px] px-1 rounded backdrop-blur-xs">
+                  Saved
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeExistingImage(index)}
+                  disabled={isSubmitting}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-900/70 text-white text-[10px] flex items-center justify-center hover:bg-rose-600 transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+
+            {/* Newly Added Local Files */}
+            {newPreviews.map((preview, index) => (
+              <div
+                key={`new-${preview}-${index}`}
+                className="relative aspect-square rounded-lg overflow-hidden border-2 border-blue-400 bg-slate-100"
               >
                 <img
                   src={preview}
-                  alt={`Product preview ${index + 1}`}
+                  alt={`New upload preview ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
+                <span className="absolute bottom-1 left-1 bg-blue-600 text-white text-[9px] px-1 rounded font-medium">
+                  New
+                </span>
                 <button
                   type="button"
-                  onClick={() => removeImage(index)}
+                  onClick={() => removeNewImage(index)}
                   disabled={isSubmitting}
-                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-900/70 text-white text-[10px] flex items-center justify-center hover:bg-rose-600 transition-colors disabled:opacity-50 cursor-pointer"
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-900/70 text-white text-[10px] flex items-center justify-center hover:bg-rose-600 transition-colors cursor-pointer"
                 >
                   ✕
                 </button>
@@ -291,7 +345,7 @@ export default function AddProductModal({
             name="uom_type"
             value={formData.uom_type}
             onChange={handleInputChange}
-            disabled={true}
+            disabled={isSubmitting}
             className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 transition-all cursor-pointer"
           >
             <option value={UomType.UNIT}>UNIT</option>
@@ -339,7 +393,6 @@ export default function AddProductModal({
             step={formData.uom_type === UomType.UNIT ? '1' : 'any'}
             value={formData.reorder_level}
             onChange={handleInputChange}
-            placeholder="5"
             className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all"
           />
         </div>
@@ -354,7 +407,6 @@ export default function AddProductModal({
             min="0"
             value={formData.cost_price}
             onChange={handleInputChange}
-            placeholder="0.00"
             className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all"
           />
         </div>
@@ -373,7 +425,6 @@ export default function AddProductModal({
             min="0"
             value={formData.selling_price}
             onChange={handleInputChange}
-            placeholder="0.00"
             className={`w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden transition-all ${
               fieldErrors.selling_price
                 ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'

@@ -1,5 +1,30 @@
+export interface CloudinaryImage {
+  url: string;
+  publicID: string;
+}
+
+export enum UomType {
+  UNIT = 'UNIT',
+  WEIGHT = 'WEIGHT',
+  VOLUME = 'VOLUME',
+}
+
+export enum UomBaseName {
+  PCS = 'pcs',
+  G = 'g',
+  ML = 'ml',
+}
+
+export enum UomDisplayName {
+  PCS = 'pcs',
+  G = 'g',
+  KG = 'kg',
+  ML = 'ml',
+  L = 'L',
+}
+
 export interface Product {
-  images: unknown[];
+  images: unknown[] | CloudinaryImage[] | File[];
   id: string;
   name: string;
   stock_quantity: number;
@@ -7,9 +32,9 @@ export interface Product {
   is_low_stock: boolean;
   cost_price: number;
   selling_price: number;
-  uom_type: 'UNIT' | 'WEIGHT' | 'VOLUME';
-  uom_base_name: string;
-  uom_display_name: string;
+  uom_type: UomType;
+  uom_base_name: UomBaseName;
+  uom_display_name: UomDisplayName;
 }
 
 export interface PurchaseOrder {

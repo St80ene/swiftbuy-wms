@@ -49,7 +49,7 @@ export const productService = {
   /**
    * Fetches a single product record via its unique identifier string.
    */
-  getSingleProduct: async (productId: string): Promise<Product> => {
+  getProductByID: async (productId: string): Promise<Product> => {
     const response = await apiClient.get<ApiResponse<Product>>(
       `${PRODUCTS_RESOURCE}/${productId}`,
     );
@@ -73,6 +73,27 @@ export const productService = {
     const response = await apiClient.post<ApiResponse<Product>>(
       PRODUCTS_RESOURCE,
       productData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    );
+    return response.data.data;
+  },
+
+  updateProduct: async (
+    productId: string,
+    productData: FormData,
+  ): Promise<Product> => {
+    const response = await apiClient.patch<ApiResponse<Product>>(
+      `${PRODUCTS_RESOURCE}/${productId}`,
+      productData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
     );
     return response.data.data;
   },
@@ -81,7 +102,8 @@ export const productService = {
 // Backwards-compatibility export wrappers for standard decoupled imports
 export const {
   getAllProducts,
-  getSingleProduct,
+  getProductByID,
   getProductsByCategory,
   createProduct,
+  updateProduct,
 } = productService;

@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Product } from '../../types';
-import { UomDisplayName, UomType } from '../../enum/product';
-import { ArrowUp, ArrowDown, ArrowUpDown, PackageSearch } from 'lucide-react';
+import { UomDisplayName, UomType } from '../../types';
+import { PackageSearch } from 'lucide-react';
 
 // Define the exact meta interface matching your NestJS backend
 interface PaginationMeta {
@@ -16,22 +16,18 @@ interface PaginationMeta {
 
 interface ProductDisplayTableProps {
   products: Product[];
-  order: 'ASC' | 'DESC';
   meta?: PaginationMeta; // Accepts the backend pagination metrics
   onPageChange?: (newPage: number) => void; // Event callback handler
   isPlaceholderData?: boolean; // Fades table slightly while fetching next page
   onSelectProduct?: (product: Product) => void;
-  onOrderChange?: (newOrder: 'ASC' | 'DESC') => void;
 }
 
 export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
   products,
   meta,
-  order,
   onPageChange,
   isPlaceholderData = false,
   onSelectProduct,
-  onOrderChange,
 }) => {
   /**
    * Converts backend base-unit quantities into human-readable values.
@@ -74,12 +70,6 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
     }).format(amount);
   };
 
-  const handleSortToggle = () => {
-    if (onOrderChange) {
-      onOrderChange(order === 'ASC' ? 'DESC' : 'ASC');
-    }
-  };
-
   /**
    * Pagination calculation range.
    */
@@ -110,7 +100,7 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
               <th className="px-4 py-3">Stock</th>
               <th className="px-4 py-3">Cost</th>
               <th className="px-4 py-3">Selling Price</th>
-              <th className="px-4 py-3 text-center">
+              {/* <th className="px-4 py-3 text-center">
                 <button
                   type="button"
                   onClick={handleSortToggle}
@@ -125,7 +115,7 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
                     <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
                   )}
                 </button>
-              </th>
+              </th> */}
             </tr>
           </thead>
 
@@ -148,16 +138,17 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
                 </td>
               </tr>
             ) : (
-              products.map((p) => {
-                const primaryImage = p.images?.[0]?.url;
+              products.map((product) => {
+                const primaryImage = product.images?.[0]?.url;
 
                 const isDeficient =
-                  p.is_low_stock || p.stock_quantity <= p.reorder_level;
+                  product.is_low_stock ||
+                  product.stock_quantity <= product.reorder_level;
 
                 return (
                   <tr
-                    key={p.id}
-                    onClick={() => onSelectProduct?.(p)}
+                    key={product.id}
+                    onClick={() => onSelectProduct?.(product)}
                     className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
                   >
                     {/* Product */}
@@ -166,7 +157,7 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
                         {primaryImage ? (
                           <img
                             src={primaryImage}
-                            alt={p.name}
+                            alt={product.name}
                             className="w-10 h-10 object-cover rounded-lg bg-slate-100 border border-slate-200/80 shrink-0 shadow-2xs group-hover:scale-105 transition-transform"
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display =
@@ -175,18 +166,18 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
                           />
                         ) : (
                           <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center font-mono text-xs font-bold text-slate-500 shrink-0 select-none">
-                            {p.name.substring(0, 2).toUpperCase()}
+                            {product.name.substring(0, 2).toUpperCase()}
                           </div>
                         )}
 
                         <div className="min-w-0">
                           <div className="font-semibold text-slate-900 truncate max-w-[220px]">
-                            {p.name}
+                            {product.name}
                           </div>
 
                           <div className="mt-0.5">
                             <span className="font-mono text-[10px] text-slate-400 uppercase tracking-tight">
-                              SKU: {p.id.split('-')[0]}
+                              SKU: {product.id.split('-')[0]}
                             </span>
                           </div>
                         </div>
@@ -200,32 +191,32 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
                           isDeficient ? 'text-rose-600' : 'text-slate-800'
                         }`}
                       >
-                        {formatStockQuantity(p)}
+                        {formatStockQuantity(product)}
                       </div>
 
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] uppercase text-slate-400">
-                          {p.uom_type}
+                          {product.uom_type}
                         </span>
 
                         <span className="text-[11px] text-slate-400">
-                          Min: {formatReorderLevel(p)}
+                          Min: {formatReorderLevel(product)}
                         </span>
                       </div>
                     </td>
 
                     {/* Cost Price */}
                     <td className="px-4 py-3 font-mono text-slate-500 text-xs whitespace-nowrap">
-                      {formatCurrency(Number(p.cost_price))}
+                      {formatCurrency(Number(product.cost_price))}
                     </td>
 
                     {/* Selling Price */}
                     <td className="px-4 py-3 font-mono font-semibold text-emerald-600 text-xs whitespace-nowrap">
-                      {formatCurrency(Number(p.selling_price))}
+                      {formatCurrency(Number(product.selling_price))}
                     </td>
 
                     {/* Status */}
-                    <td className="px-4 py-3 text-center">
+                    {/* <td className="px-4 py-3 text-center">
                       <span
                         className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider whitespace-nowrap ${
                           isDeficient
@@ -243,7 +234,7 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
 
                         {isDeficient ? 'Deficient' : 'Optimal'}
                       </span>
-                    </td>
+                    </td> */}
                   </tr>
                 );
               })
