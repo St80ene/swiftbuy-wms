@@ -4,8 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { productService } from '../../services/products';
 import ProductSearch from './ProductSearch';
 import useDebouncedValue from '../../hooks/debounceHook';
-import { LoadingScreen } from '../Error/LoadingScreen';
-import { ErrorPage } from '../Error/ErrorPage';
+import { LoadingScreen } from '../common/Error/LoadingScreen';
+import { ErrorPage } from '../common/Error/ErrorPage';
 import AddProductModal from './modals/AddProductModal';
 import { useNavigate } from 'react-router-dom';
 

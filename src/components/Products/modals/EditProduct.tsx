@@ -9,6 +9,7 @@ import React, {
 import { UomType, UomBaseName, UomDisplayName } from '../../../enum/product';
 import BaseModal from '../../common/BaseModal';
 import type { Product } from '../../entities/product';
+import type { CloudinaryImage } from '../../../interfaces/cloudImage';
 
 const MAX_IMAGES = 5;
 
@@ -58,7 +59,7 @@ export default function EditProductModal({
   });
 
   // Track existing image URLs from server vs newly added local Files
-  const [existingImages, setExistingImages] = useState<string[]>(
+  const [existingImages, setExistingImages] = useState<CloudinaryImage[]>(
     product.images || [],
   );
   const [newImages, setNewImages] = useState<File[]>([]);
@@ -283,7 +284,7 @@ export default function EditProductModal({
         {totalImageCount > 0 && (
           <div className="grid grid-cols-5 gap-2 mt-3">
             {/* Existing Server Images */}
-            {existingImages.map((url, index) => (
+            {existingImages.map(({ url }, index) => (
               <div
                 key={`existing-${url}-${index}`}
                 className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-100 group"

@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ErrorBoundary } from './components/Error/ErrorBoundary.tsx';
+import { ErrorBoundary } from './components/common/Error/ErrorBoundary.tsx';
 
 // 1. Initialize the global client instance here
 const queryClient = new QueryClient();

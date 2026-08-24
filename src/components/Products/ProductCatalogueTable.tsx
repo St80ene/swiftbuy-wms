@@ -73,7 +73,8 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
   /**
    * Pagination calculation range.
    */
-  const itemsPerPage = meta?.itemsPerPage ?? meta?.limit ?? products.length;
+
+  const itemsPerPage = meta?.itemsPerPage ?? meta?.itemCount ?? products.length;
 
   const startItem =
     meta && products.length > 0 ? (meta.currentPage - 1) * itemsPerPage + 1 : 0;
