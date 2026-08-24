@@ -1,75 +1,69 @@
-# React + TypeScript + Vite
+# SwiftBuy Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, production-ready e-commerce management dashboard built with React, TypeScript, and Vite. Designed to manage product inventory, track stock levels.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **Product Management**: Full CRUD workflow for managing inventory, pricing, reorder levels, and unit-of-measure (UOM) configurations.
+- **Media Handling**: Support for multi-image uploads using `multipart/form-data` with client-side preview, validation, and retention logic.
+- **Smart Data Fetching**: Powered by TanStack Query for caching, query invalidation, and automatic error handling.
+- **Responsive UI**: Interactive interface styled with Tailwind CSS, Lucide Icons, and Framer Motion for smooth transitions.
+- **Robust Validation**: Type-safe form handling paired with precise client-side error messaging.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Core**: React, TypeScript, Vite
+- **State & Data Fetching**: TanStack Query (React Query) v5, Axios
+- **Styling & Motion**: Tailwind CSS, Framer Motion, Lucide React
+- **Routing**: React Router v6
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Getting Started
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Prerequisites
 
+Ensure you have **Node.js 18+** and a package manager (`npm`, `pnpm`, or `yarn`) installed.
+
+### Installation
+
+1. **Clone the repository**
+
+```bash
+git clone [https://github.com/St80ene/swiftbuy-dashboard.git](https://github.com/St80ene/swiftbuy-dashboard.git)
+
+
+cd swiftbuy-dashboard
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Install Dependencies
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+npm install
 ```
+
+### Configure Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+### Start the Development Server
+
+```bash
+npm run dev
+```
+
+| Included          | Excluded                                            |
+| ----------------- | --------------------------------------------------- |
+| `npm run dev`     | Starts local development server via Vite with HMR   |
+| `npm run build`   | Runs TypeScript checks and builds production bundle |
+| `npm run lint`    | Runs ESLint analysis across the codebase            |
+| `npm run preview` | Previews the production build locally               |
