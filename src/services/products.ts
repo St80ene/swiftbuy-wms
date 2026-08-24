@@ -86,7 +86,7 @@ export const productService = {
     productId: string,
     productData: FormData,
   ): Promise<Product> => {
-    const response = await apiClient.put<ApiResponse<Product>>(
+    const response = await apiClient.patch<ApiResponse<Product>>(
       `${PRODUCTS_RESOURCE}/${productId}`,
       productData,
       {

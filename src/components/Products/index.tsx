@@ -19,7 +19,6 @@ export const Products: React.FC = () => {
 
   const [page, setPage] = useState(1);
   const [limit] = useState(7);
-  const [order, setOrder] = useState<'ASC' | 'DESC'>('DESC');
   const [search, setSearch] = useState('');
 
   const debouncedSearch = useDebouncedValue(search.trim(), 350);
@@ -31,8 +30,14 @@ export const Products: React.FC = () => {
 
   const createProductMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await productService.createProduct(data);
-      return response;
+      setIsSubmitting(true);
+      try {
+        const response = await productService.createProduct(data);
+        return response;
+      } finally {
+        setIsSubmitting(false);
+        setIsModalOpen(false);
+      }
     },
 
     onSuccess: () => {
@@ -57,13 +62,12 @@ export const Products: React.FC = () => {
     isPlaceholderData,
     refetch,
   } = useQuery({
-    queryKey: ['products', { page, limit, order, search: debouncedSearch }],
+    queryKey: ['products', { page, limit, search: debouncedSearch }],
     queryFn: () =>
       productService.getAllProducts({
         page,
         limit,
         sortBy: 'createdAt',
-        order,
         search: debouncedSearch,
       }),
     placeholderData: (previousData) => previousData,
@@ -116,14 +120,9 @@ export const Products: React.FC = () => {
       <ProductCatalogTable
         products={data?.products || []}
         meta={data?.meta}
-        order={order}
-        onOrderChange={setOrder}
         onPageChange={(newPage) => setPage(newPage)}
         isPlaceholderData={isPlaceholderData}
-        onSelectProduct={(product) => {
-          console.log('Selected product:', product);
-          navigate(`/products/${product.id}`);
-        }}
+        onSelectProduct={(product) => navigate(`/products/${product.id}`)}
       />
 
       {/* Modal View Block */}

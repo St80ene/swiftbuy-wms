@@ -134,8 +134,6 @@ export default function EditProductModal({
     e.preventDefault();
     setError('');
 
-    console.log('Closing modal with form data:', formData);
-
     const errors: Record<string, string> = {};
     if (!formData.name.trim()) errors.name = 'Product name is required';
     if (!formData.selling_price || Number(formData.selling_price) <= 0) {
@@ -148,25 +146,48 @@ export default function EditProductModal({
     }
 
     const submitPayload = new FormData();
-    submitPayload.append('name', formData.name.trim());
-    if (formData.description.trim()) {
-      submitPayload.append('description', formData.description.trim());
-    }
-    submitPayload.append('reorder_level', formData.reorder_level);
-    submitPayload.append('cost_price', formData.cost_price);
-    submitPayload.append('selling_price', formData.selling_price);
-    submitPayload.append('uom_type', formData.uom_type);
-    submitPayload.append('uom_base_name', formData.uom_base_name);
-    submitPayload.append('uom_display_name', formData.uom_display_name);
 
-    // Pass retained backend image URLs so server knows which existing images were kept
-    existingImages.forEach((url) => {
-      submitPayload.append('retained_images', url);
-    });
+    // Helper to append only if value has changed
+    const appendIfChanged = (
+      key: string,
+      newValue: string,
+      originalValue: unknown,
+    ) => {
+      const trimmedNew = newValue.trim();
+      const trimmedOriginal = String(originalValue ?? '').trim();
+      if (trimmedNew !== trimmedOriginal) {
+        submitPayload.append(key, trimmedNew);
+      }
+    };
 
-    // Pass new binary files to be uploaded
+    appendIfChanged('name', formData.name, product.name);
+    appendIfChanged('description', formData.description, product.description);
+    appendIfChanged(
+      'reorder_level',
+      formData.reorder_level,
+      product.reorder_level,
+    );
+    appendIfChanged('cost_price', formData.cost_price, product.cost_price);
+    appendIfChanged(
+      'selling_price',
+      formData.selling_price,
+      product.selling_price,
+    );
+    appendIfChanged('uom_type', formData.uom_type, product.uom_type);
+    appendIfChanged(
+      'uom_base_name',
+      formData.uom_base_name,
+      product.uom_base_name,
+    );
+    appendIfChanged(
+      'uom_display_name',
+      formData.uom_display_name,
+      product.uom_display_name,
+    );
+
+    // Append new binary files if added
     newImages.forEach((file) => {
-      submitPayload.append('new_images', file);
+      submitPayload.append('images', file);
     });
 
     onSubmit(submitPayload);

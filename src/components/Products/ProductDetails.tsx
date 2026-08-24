@@ -43,7 +43,13 @@ export default function ProductDetailsPage() {
 
   const updateProductMutation = useMutation({
     mutationFn: async (updatedProduct: FormData) => {
-      return await productService.updateProduct(productId!, updatedProduct);
+      setIsSubmitting(true);
+      try {
+        return await productService.updateProduct(productId!, updatedProduct);
+      } finally {
+        setIsSubmitting(false);
+        setIsEditModalOpen(false);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', productId] });
@@ -51,6 +57,7 @@ export default function ProductDetailsPage() {
     },
     onError: (error) => {
       console.error('Failed to update product:', error);
+      setIsSubmitting(false);
     },
   });
 
