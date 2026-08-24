@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,7 +19,7 @@ import {
   Box,
 } from 'lucide-react';
 import { productService } from '../../services/products';
-import { LoadingScreen } from '../Error/LoadingScreen';
+import { LoadingScreen } from '../common/Error/LoadingScreen';
 import type { Product } from '../entities/product';
 import EditProductModal from './modals/EditProduct';
 
@@ -267,7 +267,11 @@ export default function ProductDetailsPage() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() =>
+                  setActiveTab(
+                    tab.id as 'overview' | 'relationships' | 'history',
+                  )
+                }
                 className={`flex items-center gap-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors cursor-pointer ${
                   isActive
                     ? 'border-slate-900 text-slate-900'

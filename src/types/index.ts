@@ -23,8 +23,14 @@ export enum UomDisplayName {
   L = 'L',
 }
 
+export interface ProductImage {
+  url: string;
+  publicId?: string;
+  publicID?: string;
+}
+
 export interface Product {
-  images: unknown[] | CloudinaryImage[] | File[];
+  images: ProductImage[];
   id: string;
   name: string;
   stock_quantity: number;
