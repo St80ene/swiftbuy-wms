@@ -1,5 +1,6 @@
 // components/products/EditProductModal.tsx
 import React, {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -73,7 +74,7 @@ export default function EditProductModal({
   }, [newImages]);
 
   // Clean up object URLs on unmount or file change
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       newPreviews.forEach((url) => URL.revokeObjectURL(url));
     };

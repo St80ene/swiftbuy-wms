@@ -17,6 +17,14 @@ import {
   Layers,
   Building2,
   Box,
+  Truck,
+  Clock3,
+  ShieldCheck,
+  Info,
+  Plus,
+  ReceiptText,
+  TriangleAlert,
+  Users,
 } from 'lucide-react';
 import { productService } from '../../services/products';
 import { LoadingScreen } from '../common/Error/LoadingScreen';
@@ -399,16 +407,447 @@ export default function ProductDetailsPage() {
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            className="p-8 border border-dashed border-slate-300 rounded-xl bg-white text-center"
+            transition={{ duration: 0.15 }}
+            className="space-y-6"
           >
-            <Building2 className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-            <h4 className="text-sm font-semibold text-slate-900">
-              Relational Entities
-            </h4>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-              Connect this product with Suppliers, Purchase Orders, Warehouses,
-              and Categories.
-            </p>
+            {/* Page Header */}
+            <div className="flex flex-col gap-2">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">
+                  Supply & Procurement
+                </h3>
+                <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                  See where this product is sourced from, review supplier
+                  information, and monitor procurement activity.
+                </p>
+              </div>
+            </div>
+
+            {/* Supply Summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Suppliers */}
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 border border-slate-200">
+                    <Building2 className="h-5 w-5 text-slate-600" />
+                  </div>
+
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Suppliers
+                  </span>
+                </div>
+
+                <div className="mt-4">
+                  <p className="text-2xl font-bold tracking-tight text-slate-900">
+                    {product.suppliers?.length ?? 0}
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    {product.suppliers?.length
+                      ? 'Suppliers linked to this product'
+                      : 'No suppliers linked yet'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Primary Supplier */}
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 border border-slate-200">
+                    <Truck className="h-5 w-5 text-slate-600" />
+                  </div>
+
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Primary Supplier
+                  </span>
+                </div>
+
+                <div className="mt-4">
+                  <p className="truncate text-sm font-bold text-slate-900">
+                    {product.primarySupplier?.name ?? 'Not assigned'}
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    {product.primarySupplier
+                      ? 'Preferred source'
+                      : 'No preferred supplier selected'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Lead Time */}
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 border border-slate-200">
+                    <Clock3 className="h-5 w-5 text-slate-600" />
+                  </div>
+
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Lead Time
+                  </span>
+                </div>
+
+                <div className="mt-4">
+                  <p className="text-2xl font-bold tracking-tight text-slate-900">
+                    {product.primarySupplier?.lead_time_days
+                      ? `${product.primarySupplier.lead_time_days} days`
+                      : '—'}
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    {product.primarySupplier?.lead_time_days
+                      ? 'Typical supplier lead time'
+                      : 'Not available yet'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Supply Status */}
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 border border-slate-200">
+                    <ShieldCheck className="h-5 w-5 text-slate-600" />
+                  </div>
+
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Supply Status
+                  </span>
+                </div>
+
+                <div className="mt-4">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+
+                    <p className="text-sm font-bold text-slate-900">
+                      {product.suppliers?.length
+                        ? 'Supplier coverage available'
+                        : 'Not available'}
+                    </p>
+                  </div>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    {product.suppliers?.length
+                      ? 'Based on linked suppliers'
+                      : 'Add supplier information to assess risk'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Suppliers */}
+              <div className="lg:col-span-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      Suppliers
+                    </h3>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      Suppliers currently associated with this product
+                    </p>
+                  </div>
+
+                  {product.suppliers?.length ? (
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-slate-700 hover:text-slate-900"
+                    >
+                      View all
+                    </button>
+                  ) : null}
+                </div>
+
+                {product.suppliers?.length ? (
+                  <div className="divide-y divide-slate-100">
+                    {product.suppliers.map((supplier: any) => (
+                      <div
+                        key={supplier.id}
+                        className="flex items-center justify-between gap-4 px-6 py-4"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-50 border border-slate-200">
+                            <Building2 className="h-4 w-4 text-slate-600" />
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-sm font-semibold text-slate-900">
+                                {supplier.name}
+                              </p>
+
+                              {supplier.is_primary && (
+                                <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                  Preferred
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="mt-1 text-xs text-slate-500">
+                              {supplier.city || 'Location not provided'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid shrink-0 grid-cols-3 gap-6 text-right">
+                          <div>
+                            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                              Last Cost
+                            </p>
+
+                            <p className="mt-1 text-sm font-semibold text-slate-900">
+                              {supplier.last_purchase_price
+                                ? `₦${Number(
+                                    supplier.last_purchase_price,
+                                  ).toLocaleString()}`
+                                : '—'}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                              Lead Time
+                            </p>
+
+                            <p className="mt-1 text-sm font-semibold text-slate-900">
+                              {supplier.lead_time_days
+                                ? `${supplier.lead_time_days} days`
+                                : '—'}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                              Status
+                            </p>
+
+                            <p className="mt-1 text-sm font-semibold text-emerald-600">
+                              {supplier.is_active ? 'Active' : 'Inactive'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-6 py-12 text-center">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 border border-slate-200">
+                      <Building2 className="h-5 w-5 text-slate-400" />
+                    </div>
+
+                    <h4 className="mt-4 text-sm font-semibold text-slate-900">
+                      No suppliers linked yet
+                    </h4>
+
+                    <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-slate-500">
+                      Supplier information will help you understand where this
+                      product is sourced from, compare purchasing options, and
+                      monitor supply risk.
+                    </p>
+
+                    <button
+                      type="button"
+                      className="mt-5 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Supplier
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Supply Insights */}
+              <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div className="border-b border-slate-100 px-5 py-4">
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    Supply Insights
+                  </h3>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    What management should know about sourcing
+                  </p>
+                </div>
+
+                <div className="space-y-4 p-5">
+                  {/* Supplier Coverage */}
+                  <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white border border-slate-200">
+                        <Users className="h-4 w-4 text-slate-500" />
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-800">
+                          Supplier Coverage
+                        </p>
+
+                        <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                          {product.suppliers?.length
+                            ? `${product.suppliers.length} supplier${
+                                product.suppliers.length > 1 ? 's are' : ' is'
+                              } currently available for this product.`
+                            : 'Supplier coverage cannot be assessed until suppliers are linked.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cost Trend */}
+                  <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white border border-slate-200">
+                        <TrendingUp className="h-4 w-4 text-slate-500" />
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-800">
+                          Purchase Cost Trend
+                        </p>
+
+                        <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                          No purchase history is available yet to identify cost
+                          changes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Supplier Risk */}
+                  <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white border border-slate-200">
+                        <TriangleAlert className="h-4 w-4 text-slate-500" />
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-800">
+                          Supply Risk
+                        </p>
+
+                        <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                          Risk assessment will become available once supplier
+                          and purchasing history has been recorded.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Procurement History */}
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    Recent Purchases
+                  </h3>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    Recent procurement activity for this product
+                  </p>
+                </div>
+
+                {product.purchaseOrders?.length ? (
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-slate-700 hover:text-slate-900"
+                  >
+                    View procurement history
+                  </button>
+                ) : null}
+              </div>
+
+              {product.purchaseOrders?.length ? (
+                <div className="divide-y divide-slate-100">
+                  {product.purchaseOrders.slice(0, 5).map((purchase: any) => (
+                    <div
+                      key={purchase.id}
+                      className="grid grid-cols-2 gap-4 px-6 py-4 sm:grid-cols-5"
+                    >
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                          Supplier
+                        </p>
+
+                        <p className="mt-1 truncate text-sm font-semibold text-slate-900">
+                          {purchase.supplier?.name || 'Unknown supplier'}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                          Date
+                        </p>
+
+                        <p className="mt-1 text-sm font-medium text-slate-700">
+                          {purchase.createdAt
+                            ? new Date(purchase.createdAt).toLocaleDateString(
+                                undefined,
+                                {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                },
+                              )
+                            : '—'}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                          Quantity
+                        </p>
+
+                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                          {purchase.quantity
+                            ? purchase.quantity.toLocaleString()
+                            : '—'}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                          Unit Cost
+                        </p>
+
+                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                          {purchase.unit_cost
+                            ? `₦${Number(purchase.unit_cost).toLocaleString()}`
+                            : '—'}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                          Status
+                        </p>
+
+                        <span className="mt-1 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-600">
+                          {purchase.status || 'Recorded'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-6 py-12 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 border border-slate-200">
+                    <ReceiptText className="h-5 w-5 text-slate-400" />
+                  </div>
+
+                  <h4 className="mt-4 text-sm font-semibold text-slate-900">
+                    No purchase history yet
+                  </h4>
+
+                  <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-slate-500">
+                    Purchase activity will appear here once this product has
+                    been sourced through the procurement process.
+                  </p>
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
 

@@ -1,9 +1,8 @@
 import React from 'react';
 import type { Product } from '../../types';
 import { UomDisplayName, UomType } from '../../types';
-import { PackageSearch } from 'lucide-react';
+import { Eye, PackageSearch } from 'lucide-react';
 
-// Define the exact meta interface matching your NestJS backend
 interface PaginationMeta {
   totalItems: number;
   itemCount: number;
@@ -101,22 +100,6 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
               <th className="px-4 py-3">Stock</th>
               <th className="px-4 py-3">Cost</th>
               <th className="px-4 py-3">Selling Price</th>
-              {/* <th className="px-4 py-3 text-center">
-                <button
-                  type="button"
-                  onClick={handleSortToggle}
-                  className="inline-flex items-center gap-1.5 uppercase font-bold hover:text-slate-900 transition-colors cursor-pointer mx-auto"
-                >
-                  Status
-                  {order === 'ASC' ? (
-                    <ArrowUp className="w-3.5 h-3.5 text-blue-600" />
-                  ) : order === 'DESC' ? (
-                    <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
-                  ) : (
-                    <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
-                  )}
-                </button>
-              </th> */}
             </tr>
           </thead>
 
@@ -216,26 +199,27 @@ export const ProductCatalogTable: React.FC<ProductDisplayTableProps> = ({
                       {formatCurrency(Number(product.selling_price))}
                     </td>
 
-                    {/* Status */}
-                    {/* <td className="px-4 py-3 text-center">
-                      <span
-                        className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider whitespace-nowrap ${
-                          isDeficient
-                            ? 'bg-rose-50 text-rose-700 border border-rose-200/80'
-                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
-                        }`}
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectProduct?.(product);
+                        }}
+                        className="inline-flex items-center cursor-pointer gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg
+      hover:bg-slate-50
+      hover:border-slate-300
+      focus:outline-none
+      focus:ring-2
+      focus:ring-slate-300
+      transition-colors
+    "
+                        aria-label={`See more details for ${product.name}`}
                       >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            isDeficient
-                              ? 'bg-rose-500 animate-pulse'
-                              : 'bg-emerald-500'
-                          }`}
-                        />
-
-                        {isDeficient ? 'Deficient' : 'Optimal'}
-                      </span>
-                    </td> */}
+                        <Eye className="w-3.5 h-3.5" />
+                        See more
+                      </button>
+                    </td>
                   </tr>
                 );
               })
