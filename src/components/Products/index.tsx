@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { ProductsResponse } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { productService } from '../../services/products';
 import ProductSearch from './ProductSearch';
@@ -61,7 +62,7 @@ export const Products: React.FC = () => {
     isFetching,
     isPlaceholderData,
     refetch,
-  } = useQuery({
+  } = useQuery<ProductsResponse>({
     queryKey: ['products', { page, limit, search: debouncedSearch }],
     queryFn: () =>
       productService.getAllProducts({

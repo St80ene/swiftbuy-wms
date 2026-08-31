@@ -1,4 +1,5 @@
 import type { ProductStatus } from '@/enum/product';
+import type { PaginationMeta } from '@/interfaces';
 
 export interface CloudinaryImage {
   url: string;
@@ -86,3 +87,11 @@ export interface PurchaseOrder {
   createdAt: string;
   items: { product_name: string; quantity: number; cost: number }[];
 }
+
+export type PaginatedResponse<T, K extends string> = {
+  [P in K]: T[];
+} & {
+  meta: PaginationMeta;
+};
+
+export type ProductsResponse = PaginatedResponse<Product, 'products'>;
