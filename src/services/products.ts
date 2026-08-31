@@ -1,9 +1,8 @@
-import type { ProductAuditLogsResponse } from '@/interfaces/auditlog';
-import type { AuditLog } from '../components/entities/audit_logs';
-import type { Product } from '../components/entities/product';
+import type { AuditLog, ProductAuditLogsResponse } from '@/interfaces/auditlog';
 import type { RecordsWithMeta } from '../interfaces';
 import type { ApiResponse, GetAllProductsParams } from '../interfaces/products';
 import { apiClient } from './api';
+import type { Product } from '@/types';
 
 // Single source of truth for the resource sub-route
 const PRODUCTS_RESOURCE = '/products';
@@ -16,7 +15,7 @@ export const productService = {
    */
   getAllProducts: async (
     params: GetAllProductsParams = {},
-  ): Promise<RecordsWithMeta> => {
+  ): Promise<RecordsWithMeta<Product>> => {
     const {
       page = 1,
       limit = 10,
@@ -28,7 +27,7 @@ export const productService = {
       // category,
     } = params;
 
-    const response = await apiClient.get<ApiResponse<RecordsWithMeta>>(
+    const response = await apiClient.get<ApiResponse<RecordsWithMeta<Product>>>(
       PRODUCTS_RESOURCE,
       {
         params: {
@@ -61,7 +60,7 @@ export const productService = {
    */
   getProductsByCategory: async (
     categoryId: string,
-  ): Promise<RecordsWithMeta> => {
+  ): Promise<RecordsWithMeta<Product>> => {
     return productService.getAllProducts({ category: categoryId });
   },
 

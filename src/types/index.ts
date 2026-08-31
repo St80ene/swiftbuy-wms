@@ -47,7 +47,34 @@ export interface Product {
   status: ProductStatus;
   category?: string;
   description?: string;
-  suppliers?: Record<string, unknown>[];
+  suppliers?: Supplier[];
+  purchase_orders?: PurchaseOrder[];
+}
+
+export interface PurchaseOrder {
+  id: string;
+  po_number: string;
+  supplier_name: string;
+  status: 'DRAFT' | 'APPROVED' | 'RECEIVED' | 'CANCELLED';
+  total_estimated_cost: number;
+  createdAt: string;
+  items: { product_name: string; quantity: number; cost: number }[];
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contact_person: string;
+  email: string;
+  phone_number: string;
+  address: string;
+  last_purchase_price?: number;
+  lead_time_days?: number;
+  is_primary?: boolean;
+  is_active?: boolean;
+  city?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PurchaseOrder {

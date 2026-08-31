@@ -1,5 +1,5 @@
-export interface RecordsWithMeta {
-  records: unknown[];
+export interface RecordsWithMeta<T> {
+  records: T[];
   meta: PaginationMeta;
 }
 
