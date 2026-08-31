@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { ProductCatalogTable } from './ProductCatalogueTable';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { productService } from '../../services/products';
 import ProductSearch from './ProductSearch';
@@ -8,6 +7,7 @@ import { LoadingScreen } from '../common/Error/LoadingScreen';
 import { ErrorPage } from '../common/Error/ErrorPage';
 import AddProductModal from './modals/AddProductModal';
 import { useNavigate } from 'react-router-dom';
+import ProductTable from './ProductsTable';
 
 export const Products: React.FC = () => {
   const queryClient = useQueryClient();
@@ -18,7 +18,7 @@ export const Products: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [page, setPage] = useState(1);
-  const [limit] = useState(7);
+  const [limit, setLimit] = useState(7);
   const [search, setSearch] = useState('');
 
   const debouncedSearch = useDebouncedValue(search.trim(), 350);
@@ -117,11 +117,17 @@ export const Products: React.FC = () => {
       />
 
       {/* Catalogue View */}
-      <ProductCatalogTable
+
+      <ProductTable
         products={data?.products || []}
         meta={data?.meta}
-        onPageChange={(newPage) => setPage(newPage)}
         isPlaceholderData={isPlaceholderData}
+        isLoading={isLoading}
+        onPageChange={setPage}
+        onPageSizeChange={(newLimit) => {
+          setLimit(newLimit);
+          setPage(1);
+        }}
         onSelectProduct={(product) => navigate(`/products/${product.id}`)}
       />
 

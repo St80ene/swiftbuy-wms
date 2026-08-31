@@ -17,3 +17,9 @@ export enum UomDisplayName {
   ML = 'ml',
   L = 'L',
 }
+
+export enum ProductStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  ARCHIVED = 'ARCHIVED',
+}

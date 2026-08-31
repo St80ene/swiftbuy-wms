@@ -1,12 +1,18 @@
 // components/products/EditProductModal.tsx
 import React, {
+  useEffect,
   useMemo,
   useRef,
   useState,
   type Dispatch,
   type SetStateAction,
 } from 'react';
-import { UomType, UomBaseName, UomDisplayName } from '../../../enum/product';
+import {
+  UomType,
+  UomBaseName,
+  UomDisplayName,
+  ProductStatus,
+} from '../../../enum/product';
 import BaseModal from '../../common/BaseModal';
 import type { Product } from '../../entities/product';
 import type { CloudinaryImage } from '../../../interfaces/cloudImage';
@@ -53,9 +59,10 @@ export default function EditProductModal({
     reorder_level: String(product.reorder_level ?? '5'),
     cost_price: String(product.cost_price ?? '0.00'),
     selling_price: String(product.selling_price ?? '0.00'),
-    uom_type: product.uom_type || UomType.UNIT,
-    uom_base_name: product.uom_base_name || UomBaseName.PCS,
-    uom_display_name: product.uom_display_name || UomDisplayName.PCS,
+    uom_type: product.uom_type,
+    uom_base_name: product.uom_base_name,
+    uom_display_name: product.uom_display_name,
+    status: product.status,
   });
 
   // Track existing image URLs from server vs newly added local Files
@@ -73,7 +80,7 @@ export default function EditProductModal({
   }, [newImages]);
 
   // Clean up object URLs on unmount or file change
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       newPreviews.forEach((url) => URL.revokeObjectURL(url));
     };
@@ -185,6 +192,8 @@ export default function EditProductModal({
       formData.uom_display_name,
       product.uom_display_name,
     );
+
+    appendIfChanged('status', formData.status, product.status);
 
     // Append new binary files if added
     newImages.forEach((file) => {
@@ -437,6 +446,22 @@ export default function EditProductModal({
               {fieldErrors.selling_price}
             </p>
           )}
+        </div>
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+            Product Active Status
+          </label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleInputChange}
+            disabled={isSubmitting}
+            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 transition-all cursor-pointer"
+          >
+            <option value={ProductStatus.ACTIVE}>ACTIVE</option>
+            <option value={ProductStatus.INACTIVE}>INACTIVE</option>
+            <option value={ProductStatus.ARCHIVED}>ARCHIVED</option>
+          </select>
         </div>
       </div>
     </BaseModal>

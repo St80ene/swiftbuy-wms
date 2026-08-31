@@ -11,7 +11,7 @@ interface ErrorPageProps {
 }
 
 export const ErrorPage: React.FC<ErrorPageProps> = ({
-  title = "Something went wrong",
+  title = 'Something went wrong',
   message = "We ran into an unexpected issue while loading this page. Don't worry, your data is safe.",
   onRetry = () => window.location.reload(),
   onNavigateHome = () => (window.location.href = '/'),
@@ -47,7 +47,7 @@ export const ErrorPage: React.FC<ErrorPageProps> = ({
         <div className="flex flex-col gap-3">
           <button
             onClick={onRetry}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all shadow-md shadow-indigo-500/20 active:scale-[0.98]"
+            className="w-full flex items-center cursor-pointer justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all shadow-md shadow-indigo-500/20 active:scale-[0.98]"
           >
             <RefreshCw className="w-4 h-4" />
             Try Again
@@ -55,7 +55,7 @@ export const ErrorPage: React.FC<ErrorPageProps> = ({
 
           <button
             onClick={onNavigateHome}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium transition-all active:scale-[0.98]"
+            className="w-full flex items-center cursor-pointer justify-center gap-2 px-5 py-3 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium transition-all active:scale-[0.98]"
           >
             <Home className="w-4 h-4" />
             Return to Dashboard

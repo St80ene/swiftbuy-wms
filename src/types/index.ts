@@ -1,3 +1,5 @@
+import type { ProductStatus } from '@/enum/product';
+
 export interface CloudinaryImage {
   url: string;
   publicID: string;
@@ -35,12 +37,17 @@ export interface Product {
   name: string;
   stock_quantity: number;
   reorder_level: number;
-  is_low_stock: boolean;
   cost_price: number;
   selling_price: number;
   uom_type: UomType;
   uom_base_name: UomBaseName;
   uom_display_name: UomDisplayName;
+  createdAt: Date;
+  updatedAt: Date;
+  status: ProductStatus;
+  category?: string;
+  description?: string;
+  suppliers?: Record<string, unknown>[];
 }
 
 export interface PurchaseOrder {
