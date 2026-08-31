@@ -1,9 +1,8 @@
+import type { ProductAuditLogsResponse } from '@/interfaces/auditlog';
+import type { AuditLog } from '../components/entities/audit_logs';
 import type { Product } from '../components/entities/product';
-import type {
-  ApiResponse,
-  GetAllProductsParams,
-  ProductsWithMeta,
-} from '../interfaces/products';
+import type { RecordsWithMeta } from '../interfaces';
+import type { ApiResponse, GetAllProductsParams } from '../interfaces/products';
 import { apiClient } from './api';
 
 // Single source of truth for the resource sub-route
@@ -17,7 +16,7 @@ export const productService = {
    */
   getAllProducts: async (
     params: GetAllProductsParams = {},
-  ): Promise<ProductsWithMeta> => {
+  ): Promise<RecordsWithMeta> => {
     const {
       page = 1,
       limit = 10,
@@ -29,7 +28,7 @@ export const productService = {
       // category,
     } = params;
 
-    const response = await apiClient.get<ApiResponse<ProductsWithMeta>>(
+    const response = await apiClient.get<ApiResponse<RecordsWithMeta>>(
       PRODUCTS_RESOURCE,
       {
         params: {
@@ -62,8 +61,28 @@ export const productService = {
    */
   getProductsByCategory: async (
     categoryId: string,
-  ): Promise<ProductsWithMeta> => {
+  ): Promise<RecordsWithMeta> => {
     return productService.getAllProducts({ category: categoryId });
+  },
+
+  /**
+   * Retrieves paginated audit logs for a product.
+   *
+   * @param productId - UUID of the product.
+   * @param params - Pagination and filtering parameters.
+   * @returns Paginated audit logs for the product.
+   */
+  getProductAuditLogs: async (
+    productId: string,
+    params?: GetAllProductsParams,
+  ) => {
+    const response = await apiClient.get<
+      ApiResponse<ProductAuditLogsResponse<AuditLog>>
+    >(`${PRODUCTS_RESOURCE}/${productId}/audit-logs`, {
+      params,
+    });
+
+    return response.data.data;
   },
 
   /**
@@ -106,4 +125,5 @@ export const {
   getProductsByCategory,
   createProduct,
   updateProduct,
+  getProductAuditLogs,
 } = productService;

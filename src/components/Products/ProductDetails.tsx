@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getAuditLogColumns } from '@/components/AuditLogs/audit_logs_columns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,10 +18,6 @@ import {
   Layers,
   Building2,
   Box,
-  Truck,
-  Clock3,
-  ShieldCheck,
-  Info,
   Plus,
   ReceiptText,
   TriangleAlert,
@@ -28,19 +25,54 @@ import {
 } from 'lucide-react';
 import { productService } from '../../services/products';
 import { LoadingScreen } from '../common/Error/LoadingScreen';
-import type { Product } from '../entities/product';
 import EditProductModal from './modals/EditProduct';
+import DataTable from '../common/DataTable';
+import AuditLogDetailsModal from '../AuditLogs/AuditLogModal';
+import type { PaginationMeta } from '@/interfaces';
+import type { AuditLog } from '@/interfaces/auditlog';
+import type { Product } from '@/types';
 
 export default function ProductDetailsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { productId } = useParams<{ productId: string }>();
 
+  const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLog | null>(
+    null,
+  );
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditLimit, setAuditLimit] = useState(10);
+
+  const handleAuditPageChange = (page: number) => {
+    setAuditPage(page);
+  };
+
+  const auditLogColumns = getAuditLogColumns(setSelectedAuditLog);
+
+  const handleAuditPageSizeChange = (limit: number) => {
+    setAuditLimit(limit);
+    setAuditPage(1);
+  };
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'relationships' | 'history'
+    'overview' | 'relationships' | 'ledger'
   >('overview');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [productLedger, setProductLedger] = useState<{
+    auditLogs: AuditLog[];
+    meta: PaginationMeta;
+  }>({
+    auditLogs: [],
+    meta: {
+      currentPage: 1,
+      hasNextPage: false,
+      hasPreviousPage: false,
+      itemCount: 1,
+      itemsPerPage: 10,
+      totalItems: 1,
+      totalPages: 1,
+    },
+  });
   const { data, isLoading, isError, error } = useQuery<Product>({
     queryKey: ['product', productId],
     queryFn: () => productService.getProductByID(productId!),
@@ -68,6 +100,27 @@ export default function ProductDetailsPage() {
       setIsSubmitting(false);
     },
   });
+
+  useEffect(() => {
+    if (activeTab !== 'ledger' || !productId) {
+      return;
+    }
+
+    async function fetchProductLedger() {
+      try {
+        const ledger = await productService.getProductAuditLogs(productId!, {
+          page: auditPage,
+          limit: auditLimit,
+        });
+
+        setProductLedger(ledger);
+      } catch (error) {
+        console.error('Failed to fetch product audit logs:', error);
+      }
+    }
+
+    fetchProductLedger();
+  }, [activeTab, productId, auditPage, auditLimit]);
 
   useEffect(() => {
     if (product?.name) {
@@ -110,9 +163,7 @@ export default function ProductDetailsPage() {
       : '0';
 
   const isOut = product.stock_quantity <= 0;
-  const isLow =
-    product.is_low_stock === true ||
-    product.stock_quantity <= product.reorder_level;
+  const isLow = product.stock_quantity <= product.reorder_level;
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
@@ -268,7 +319,7 @@ export default function ProductDetailsPage() {
               label: 'Relationships & Supply',
               icon: Building2,
             },
-            { id: 'history', label: 'Audit History', icon: History },
+            { id: 'ledger', label: 'Product Ledger', icon: History },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -277,7 +328,7 @@ export default function ProductDetailsPage() {
                 key={tab.id}
                 onClick={() =>
                   setActiveTab(
-                    tab.id as 'overview' | 'relationships' | 'history',
+                    tab.id as 'overview' | 'relationships' | 'ledger',
                   )
                 }
                 className={`flex items-center gap-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors cursor-pointer ${
@@ -386,7 +437,7 @@ export default function ProductDetailsPage() {
                   <div className="py-2.5 flex justify-between">
                     <dt className="text-slate-500">Created</dt>
                     <dd className="font-medium text-slate-700">
-                      {new Date(product.createdAt).toLocaleDateString()}
+                      {new Date(product?.createdAt).toLocaleDateString()}
                     </dd>
                   </div>
                   <div className="py-2.5 flex justify-between">
@@ -449,89 +500,6 @@ export default function ProductDetailsPage() {
                   </p>
                 </div>
               </div>
-
-              {/* Primary Supplier */}
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 border border-slate-200">
-                    <Truck className="h-5 w-5 text-slate-600" />
-                  </div>
-
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Primary Supplier
-                  </span>
-                </div>
-
-                <div className="mt-4">
-                  <p className="truncate text-sm font-bold text-slate-900">
-                    {product.primarySupplier?.name ?? 'Not assigned'}
-                  </p>
-
-                  <p className="mt-1 text-xs text-slate-500">
-                    {product.primarySupplier
-                      ? 'Preferred source'
-                      : 'No preferred supplier selected'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Lead Time */}
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 border border-slate-200">
-                    <Clock3 className="h-5 w-5 text-slate-600" />
-                  </div>
-
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Lead Time
-                  </span>
-                </div>
-
-                <div className="mt-4">
-                  <p className="text-2xl font-bold tracking-tight text-slate-900">
-                    {product.primarySupplier?.lead_time_days
-                      ? `${product.primarySupplier.lead_time_days} days`
-                      : '—'}
-                  </p>
-
-                  <p className="mt-1 text-xs text-slate-500">
-                    {product.primarySupplier?.lead_time_days
-                      ? 'Typical supplier lead time'
-                      : 'Not available yet'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Supply Status */}
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 border border-slate-200">
-                    <ShieldCheck className="h-5 w-5 text-slate-600" />
-                  </div>
-
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Supply Status
-                  </span>
-                </div>
-
-                <div className="mt-4">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-
-                    <p className="text-sm font-bold text-slate-900">
-                      {product.suppliers?.length
-                        ? 'Supplier coverage available'
-                        : 'Not available'}
-                    </p>
-                  </div>
-
-                  <p className="mt-1 text-xs text-slate-500">
-                    {product.suppliers?.length
-                      ? 'Based on linked suppliers'
-                      : 'Add supplier information to assess risk'}
-                  </p>
-                </div>
-              </div>
             </div>
 
             {/* Main Content */}
@@ -561,7 +529,7 @@ export default function ProductDetailsPage() {
 
                 {product.suppliers?.length ? (
                   <div className="divide-y divide-slate-100">
-                    {product.suppliers.map((supplier: any) => (
+                    {product.suppliers.map((supplier) => (
                       <div
                         key={supplier.id}
                         className="flex items-center justify-between gap-4 px-6 py-4"
@@ -851,22 +819,42 @@ export default function ProductDetailsPage() {
           </motion.div>
         )}
 
-        {activeTab === 'history' && (
+        {activeTab === 'ledger' && (
           <motion.div
-            key="history"
+            key="ledger"
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            className="p-8 border border-dashed border-slate-300 rounded-xl bg-white text-center"
+            className="space-y-4"
           >
-            <History className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-            <h4 className="text-sm font-semibold text-slate-900">
-              Stock & Price Audit Logs
-            </h4>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-              Historical activity for stock adjustments, price changes, and
-              order allocations.
-            </p>
+            {/* Section heading */}
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-slate-500" />
+
+                  <h4 className="text-sm font-semibold text-slate-900">
+                    Stock & Price Audit Logs
+                  </h4>
+                </div>
+
+                <p className="text-xs text-slate-500 mt-1">
+                  Historical activity for stock adjustments, price changes, and
+                  order allocations.
+                </p>
+              </div>
+            </div>
+
+            {/* Audit table */}
+            <DataTable<AuditLog>
+              records={productLedger?.auditLogs ?? []}
+              columns={auditLogColumns}
+              meta={productLedger?.meta}
+              pageSizeOptions={[10, 25, 50]}
+              onPageChange={handleAuditPageChange}
+              onPageSizeChange={handleAuditPageSizeChange}
+              getRowKey={(log) => log.id}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -885,6 +873,12 @@ export default function ProductDetailsPage() {
           }}
         />
       )}
+
+      <AuditLogDetailsModal
+        isOpen={Boolean(selectedAuditLog)}
+        auditLog={selectedAuditLog}
+        onClose={() => setSelectedAuditLog(null)}
+      />
     </div>
   );
 }
