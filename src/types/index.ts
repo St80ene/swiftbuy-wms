@@ -2,7 +2,7 @@ import type { ProductStatus } from '@/enum/product';
 
 export interface CloudinaryImage {
   url: string;
-  publicID: string;
+  publicId: string;
 }
 
 export enum UomType {
@@ -32,7 +32,7 @@ export interface ProductImage {
 }
 
 export interface Product {
-  images: ProductImage[];
+  images: CloudinaryImage[];
   id: string;
   name: string;
   stock_quantity: number;
