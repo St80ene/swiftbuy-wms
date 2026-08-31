@@ -1,4 +1,3 @@
-// components/products/EditProductModal.tsx
 import React, {
   useEffect,
   useMemo,
@@ -14,8 +13,8 @@ import {
   ProductStatus,
 } from '../../../enum/product';
 import BaseModal from '../../common/BaseModal';
-import type { Product } from '../../entities/product';
 import type { CloudinaryImage } from '../../../interfaces/cloudImage';
+import type { Product } from '@/types';
 
 const MAX_IMAGES = 5;
 

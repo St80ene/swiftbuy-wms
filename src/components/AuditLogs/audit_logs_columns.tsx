@@ -1,5 +1,5 @@
+import type { AuditLog } from '@/interfaces/auditlog';
 import type { DataTableColumn } from '@/interfaces/data_table';
-import type { AuditLog } from '@/components/entities/audit_logs';
 
 export const getAuditLogColumns = (
   onViewChanges: (log: AuditLog) => void,

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { PurchaseOrder, Supplier } from '@/types';
 import { getAuditLogColumns } from '@/components/AuditLogs/audit_logs_columns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -529,7 +530,7 @@ export default function ProductDetailsPage() {
 
                 {product.suppliers?.length ? (
                   <div className="divide-y divide-slate-100">
-                    {product.suppliers.map((supplier) => (
+                    {product.suppliers.map((supplier: Supplier) => (
                       <div
                         key={supplier.id}
                         className="flex items-center justify-between gap-4 px-6 py-4"
@@ -543,6 +544,9 @@ export default function ProductDetailsPage() {
                             <div className="flex items-center gap-2">
                               <p className="truncate text-sm font-semibold text-slate-900">
                                 {supplier.name}
+                              </p>
+                              <p className="truncate text-sm font-semibold text-slate-900">
+                                {supplier.email}
                               </p>
 
                               {supplier.is_primary && (
@@ -717,7 +721,7 @@ export default function ProductDetailsPage() {
                   </p>
                 </div>
 
-                {product.purchaseOrders?.length ? (
+                {product.purchase_orders?.length ? (
                   <button
                     type="button"
                     className="text-xs font-semibold text-slate-700 hover:text-slate-900"
@@ -727,77 +731,79 @@ export default function ProductDetailsPage() {
                 ) : null}
               </div>
 
-              {product.purchaseOrders?.length ? (
+              {product.purchase_orders?.length ? (
                 <div className="divide-y divide-slate-100">
-                  {product.purchaseOrders.slice(0, 5).map((purchase: any) => (
-                    <div
-                      key={purchase.id}
-                      className="grid grid-cols-2 gap-4 px-6 py-4 sm:grid-cols-5"
-                    >
-                      <div>
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                          Supplier
-                        </p>
+                  {product.purchase_orders
+                    .slice(0, 5)
+                    .map((purchase: PurchaseOrder) => (
+                      <div
+                        key={purchase.id}
+                        className="grid grid-cols-2 gap-4 px-6 py-4 sm:grid-cols-5"
+                      >
+                        <div>
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                            Supplier
+                          </p>
 
-                        <p className="mt-1 truncate text-sm font-semibold text-slate-900">
-                          {purchase.supplier?.name || 'Unknown supplier'}
-                        </p>
+                          <p className="mt-1 truncate text-sm font-semibold text-slate-900">
+                            {purchase.supplier_name || 'Unknown supplier'}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                            Date
+                          </p>
+
+                          <p className="mt-1 text-sm font-medium text-slate-700">
+                            {purchase.createdAt
+                              ? new Date(purchase.createdAt).toLocaleDateString(
+                                  undefined,
+                                  {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  },
+                                )
+                              : '—'}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                            Quantity
+                          </p>
+
+                          <p className="mt-1 text-sm font-semibold text-slate-900">
+                            {purchase.items?.[0]?.quantity
+                              ? purchase.items[0].quantity.toLocaleString()
+                              : '—'}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                            Unit Cost
+                          </p>
+
+                          <p className="mt-1 text-sm font-semibold text-slate-900">
+                            {purchase.items?.[0]?.cost
+                              ? `₦${Number(purchase.items[0].cost).toLocaleString()}`
+                              : '—'}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                            Status
+                          </p>
+
+                          <span className="mt-1 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-600">
+                            {purchase.status || 'Recorded'}
+                          </span>
+                        </div>
                       </div>
-
-                      <div>
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                          Date
-                        </p>
-
-                        <p className="mt-1 text-sm font-medium text-slate-700">
-                          {purchase.createdAt
-                            ? new Date(purchase.createdAt).toLocaleDateString(
-                                undefined,
-                                {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  year: 'numeric',
-                                },
-                              )
-                            : '—'}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                          Quantity
-                        </p>
-
-                        <p className="mt-1 text-sm font-semibold text-slate-900">
-                          {purchase.quantity
-                            ? purchase.quantity.toLocaleString()
-                            : '—'}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                          Unit Cost
-                        </p>
-
-                        <p className="mt-1 text-sm font-semibold text-slate-900">
-                          {purchase.unit_cost
-                            ? `₦${Number(purchase.unit_cost).toLocaleString()}`
-                            : '—'}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                          Status
-                        </p>
-
-                        <span className="mt-1 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-600">
-                          {purchase.status || 'Recorded'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               ) : (
                 <div className="px-6 py-12 text-center">
