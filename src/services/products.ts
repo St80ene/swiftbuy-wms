@@ -1,6 +1,6 @@
 import type { AuditLog, ProductAuditLogsResponse } from '@/interfaces/auditlog';
 import type { ApiResponse, GetAllProductsParams } from '../interfaces/products';
-import { apiClient } from './api';
+import apiClient from './api';
 import type { Product, ProductsResponse } from '@/types';
 
 // Single source of truth for the resource sub-route

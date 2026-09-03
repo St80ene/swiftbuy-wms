@@ -127,12 +127,12 @@ export default function AddProductModal({
   const removeImage = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index),
+      images: prev.images.filter((_, indx) => indx !== index),
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: unknown) => {
+    event.preventDefault();
     setError('');
 
     const errors: Record<string, string> = {};
