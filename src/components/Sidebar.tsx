@@ -7,64 +7,12 @@ import {
   GitPullRequest,
   LogOut,
   Zap,
-  ShieldAlert,
-  ShieldCheck,
-  UserCheck,
-  PackageCheck,
-  ShoppingCart,
   Loader2,
 } from 'lucide-react';
 
 import { useAuth } from '@/services/auth/hooks/useAuth';
+import { ROLE_CONFIG } from './common/role_config';
 import { UserRole } from '@/enum/role';
-
-// Visual configuration for each dynamic role
-const ROLE_CONFIG: Record<
-  UserRole,
-  {
-    label: string;
-    color: string;
-    bg: string;
-    border: string;
-    icon: React.ElementType;
-  }
-> = {
-  [UserRole.SUPER_ADMIN]: {
-    label: 'Super Admin',
-    color: 'text-purple-400',
-    bg: 'bg-purple-950/40',
-    border: 'border-purple-500/30',
-    icon: ShieldAlert,
-  },
-  [UserRole.ADMIN]: {
-    label: 'Administrator',
-    color: 'text-cyan-400',
-    bg: 'bg-cyan-950/40',
-    border: 'border-cyan-500/30',
-    icon: ShieldCheck,
-  },
-  [UserRole.MANAGER]: {
-    label: 'Operations Manager',
-    color: 'text-amber-400',
-    bg: 'bg-amber-950/40',
-    border: 'border-amber-500/30',
-    icon: UserCheck,
-  },
-  [UserRole.STOREMAN]: {
-    label: 'Inventory Storeman',
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-950/40',
-    border: 'border-emerald-500/30',
-    icon: PackageCheck,
-  },
-  [UserRole.CASHIER]: {
-    label: 'POS Cashier',
-    color: 'text-blue-400',
-    bg: 'bg-blue-950/40',
-    border: 'border-blue-500/30',
-    icon: ShoppingCart,
-  },
-};
 
 const NAV_ITEMS = [
   { label: 'Executive Overview', to: '/dashboard', icon: LayoutDashboard },
@@ -83,8 +31,14 @@ export const Sidebar: React.FC = () => {
 
   // Assuming user object contains role; fallback to ADMIN if undefined
   const { logout, user } = useAuth();
-  const currentRole: UserRole = user?.role || UserRole.ADMIN;
-  const roleStyle = ROLE_CONFIG[currentRole] || ROLE_CONFIG[UserRole.ADMIN];
+  const currentRole: UserRole = user?.role?.name || UserRole.ADMIN;
+  const roleStyle: {
+    label: string;
+    color: string;
+    bg: string;
+    border: string;
+    icon: React.ElementType;
+  } = ROLE_CONFIG[currentRole];
   const RoleIcon = roleStyle.icon;
 
   const handleLogout = async () => {
@@ -175,7 +129,9 @@ export const Sidebar: React.FC = () => {
           </div>
           <div className="overflow-hidden">
             <p className="truncate text-xs font-semibold text-slate-200">
-              {user?.name || 'Authorized User'}
+              {user?.first_name && user?.last_name
+                ? `${user?.first_name} ${user?.last_name}`
+                : 'Authorized User'}
             </p>
             <p
               className={`truncate text-[10px] font-mono font-medium ${roleStyle.color}`}

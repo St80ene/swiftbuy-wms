@@ -1,3 +1,5 @@
+import type { Role } from '@/interfaces/role.interface';
+
 export interface AuthUser {
   id: string;
   first_name: string;
@@ -7,6 +9,7 @@ export interface AuthUser {
   business_id: string;
   store_id: string | null;
   is_active: boolean;
+  role: Role;
 }
 
 export interface LoginResponse {

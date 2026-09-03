@@ -19,7 +19,7 @@ export function AuthProvider({ children }: Props) {
 
   const { data: user = null, isLoading } = useQuery({
     queryKey: ['auth', 'me'],
-    queryFn: authApi.me,
+    queryFn: authApi.profile,
     enabled: hasAccessToken,
     retry: false,
   });

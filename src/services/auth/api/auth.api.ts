@@ -28,8 +28,8 @@ export const authApi = {
     return data;
   },
 
-  async me(): Promise<AuthUser> {
-    const { data } = await apiClient.get<AuthUser>('/auth/me');
+  async profile(): Promise<AuthUser> {
+    const { data } = await apiClient.get<AuthUser>('/auth/profile');
 
     return data;
   },

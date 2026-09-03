@@ -19,7 +19,10 @@ import {
 import { FormEvent, useState, useMemo } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { LoadingScreen } from '../common/Error/LoadingScreen';
+import { LoadingScreen } from '../../common/Error/LoadingScreen';
+import { GoogleIcon } from './icons/Google';
+import { MicrosoftIcon } from './icons/Microsoft';
+import { AppleIcon } from './icons/Apple';
 
 const chartData = [35, 50, 42, 68, 55, 75, 62, 88, 72, 94, 82, 100];
 
@@ -88,7 +91,6 @@ export default function Login() {
   }
 
   if (isAuthenticated) {
-    console.log('User is authenticated, redirecting to dashboard...');
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -689,54 +691,5 @@ export default function Login() {
         </section>
       </div>
     </main>
-  );
-}
-
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="#4285F4"
-        d="M21.35 12.27c0-.78-.07-1.53-.22-2.25H12v4.26h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.7 2.91-4.2 2.91-7.4z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 21.5c2.63 0 4.84-.87 6.45-2.35l-3.14-2.45c-.87.58-1.98.92-3.31.92-2.54 0-4.7-1.72-5.47-4.03H3.28v2.53A9.74 9.74 0 0 0 12 21.5z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M6.53 13.59A5.85 5.85 0 0 1 6.22 12c0-.55.11-1.09.31-1.59V7.88H3.28A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.05 1.03 4.12l3.25-2.53z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 6.38c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.84 3.48 14.63 2.5 12 2.5a9.74 9.74 0 0 0-8.72 5.38l3.25 2.53C6.3 8.1 8.46 6.38 12 6.38z"
-      />
-    </svg>
-  );
-}
-
-function MicrosoftIcon() {
-  return (
-    <div className="grid h-[16px] w-[16px] grid-cols-2 gap-[2px]">
-      <span className="bg-[#F25022]" />
-      <span className="bg-[#7FBA00]" />
-      <span className="bg-[#00A4EF]" />
-      <span className="bg-[#FFB900]" />
-    </div>
-  );
-}
-
-function AppleIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-      className="text-white"
-    >
-      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.07-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25C11.88 5.02 13.69 3.18 15.83 3c.3 2.58-2.34 4.5-3.8 4.25z" />
-    </svg>
   );
 }
