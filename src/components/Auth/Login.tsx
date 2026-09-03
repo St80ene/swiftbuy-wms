@@ -646,7 +646,7 @@ export default function Login() {
                   shouldReduceMotion ? undefined : { scale: 1.03, y: -2 }
                 }
                 whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
-                className="flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-all hover:bg-white/10 hover:border-cyan-500/30"
+                className="flex h-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-all hover:bg-white/10 hover:border-cyan-500/30"
                 aria-label="Google"
               >
                 <GoogleIcon />
@@ -658,7 +658,7 @@ export default function Login() {
                   shouldReduceMotion ? undefined : { scale: 1.03, y: -2 }
                 }
                 whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
-                className="flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-all hover:bg-white/10 hover:border-cyan-500/30"
+                className="flex h-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-all hover:bg-white/10 hover:border-cyan-500/30"
                 aria-label="Microsoft"
               >
                 <MicrosoftIcon />
@@ -670,7 +670,7 @@ export default function Login() {
                   shouldReduceMotion ? undefined : { scale: 1.03, y: -2 }
                 }
                 whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
-                className="flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-all hover:bg-white/10 hover:border-cyan-500/30"
+                className="flex h-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-all hover:bg-white/10 hover:border-cyan-500/30"
                 aria-label="Apple"
               >
                 <AppleIcon />

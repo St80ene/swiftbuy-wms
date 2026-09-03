@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { authApi } from '../api/auth.api';
 import { tokenStorage } from '../utils/token_storage.util';
@@ -12,12 +12,15 @@ interface Props {
 export function AuthProvider({ children }: Props) {
   const queryClient = useQueryClient();
 
-  const accessToken = tokenStorage.getAccessToken();
+  // Keep token existence in React state so changes trigger a re-render
+  const [hasAccessToken, setHasAccessToken] = useState(
+    () => !!tokenStorage.getAccessToken(),
+  );
 
   const { data: user = null, isLoading } = useQuery({
     queryKey: ['auth', 'me'],
     queryFn: authApi.me,
-    enabled: !!accessToken,
+    enabled: hasAccessToken,
     retry: false,
   });
 
@@ -30,7 +33,10 @@ export function AuthProvider({ children }: Props) {
     // Save tokens
     tokenStorage.setTokens(response.accessToken, response.refreshToken);
 
-    // Store the user returned by the login API
+    // Tell React that authentication now exists
+    setHasAccessToken(true);
+
+    // Cache the user returned by login
     queryClient.setQueryData(['auth', 'me'], response.user);
 
     return response.user;
@@ -40,8 +46,13 @@ export function AuthProvider({ children }: Props) {
     try {
       await authApi.logout();
     } finally {
+      // Clear authentication first
       tokenStorage.clearTokens();
 
+      // Update React state
+      setHasAccessToken(false);
+
+      // Remove authenticated user
       queryClient.removeQueries({
         queryKey: ['auth', 'me'],
       });
@@ -52,7 +63,7 @@ export function AuthProvider({ children }: Props) {
     <AuthContext.Provider
       value={{
         user,
-        isLoading: accessToken ? isLoading : false,
+        isLoading: hasAccessToken && isLoading,
         isAuthenticated: !!user,
         login,
         logout,
