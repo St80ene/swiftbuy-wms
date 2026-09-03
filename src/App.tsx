@@ -7,6 +7,8 @@ import { Dashboard } from './components/Dashboard';
 import ProductDetails from './components/Products/ProductDetails';
 import { ProtectedRoute } from './components/Auth/ProtectedRoute';
 import Login from './components/Auth/Login';
+import { UserProfilePage } from './pages/UserProfilePage';
+import { BusinessSettingsPage } from './pages/BusinessSettingsPage';
 
 export default function App() {
   return (
@@ -20,6 +22,15 @@ export default function App() {
           <Route element={<AppLayout />}>
             {/* Dashboard */}
             <Route path="/dashboard" element={<Dashboard />} />
+
+            {/* Profile */}
+            <Route path="/profile" element={<UserProfilePage />} />
+
+            {/* Business Settings */}
+            <Route
+              path="/settings/business"
+              element={<BusinessSettingsPage />}
+            />
 
             {/* Products */}
             <Route path="/products" element={<Products />} />
