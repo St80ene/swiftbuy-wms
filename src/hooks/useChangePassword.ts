@@ -1,5 +1,6 @@
 import { authApi } from '@/services/auth/api/auth.api';
 import { useMutation } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 
 interface ChangePasswordPayload {
   currentPassword: string;
@@ -7,8 +8,8 @@ interface ChangePasswordPayload {
 }
 
 export const useChangePassword = () => {
-  return useMutation({
-    mutationFn: ({ currentPassword, newPassword }: ChangePasswordPayload) =>
+  return useMutation<unknown, AxiosError, ChangePasswordPayload>({
+    mutationFn: ({ currentPassword, newPassword }) =>
       authApi.changePassword(currentPassword, newPassword),
   });
 };

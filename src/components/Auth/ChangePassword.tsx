@@ -108,7 +108,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   const [isSuccess, setIsSuccess] = useState(false);
 
   const { mutate, isPending, error, reset } = useChangePassword();
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { requirements, score, patternWarning } = evaluatePassword(newPassword);
   const strength = getStrengthInfo(score);
@@ -238,15 +238,19 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           setIsSuccess(true);
           setTimeout(() => {
             logout();
+            onSuccess?.();
           }, 1500);
         },
       },
     );
   };
 
-  const apiErrorMessage = error
-    ? (error as any)?.response?.data?.message || 'Failed to update password.'
-    : '';
+  const apiErrorMessage =
+    error?.response?.data &&
+    typeof error.response.data === 'object' &&
+    'message' in error.response.data
+      ? String(error.response.data.message)
+      : 'Failed to update password.';
 
   return (
     <BaseModal
