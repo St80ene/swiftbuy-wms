@@ -7,8 +7,8 @@ import { Dashboard } from './components/Dashboard';
 import ProductDetails from './components/Products/ProductDetails';
 import { ProtectedRoute } from './components/Auth/ProtectedRoute';
 import Login from './components/Auth/Login';
-import { UserProfilePage } from './pages/UserProfilePage';
-import { BusinessSettingsPage } from './pages/BusinessSettingsPage';
+import { UserProfilePage } from './components/Settings/UserProfilePage';
+import { BusinessSettingsPage } from './components/Settings/BusinessSettingsPage';
 
 export default function App() {
   return (
@@ -24,7 +24,7 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
 
             {/* Profile */}
-            <Route path="/profile" element={<UserProfilePage />} />
+            <Route path="/settings/profile" element={<UserProfilePage />} />
 
             {/* Business Settings */}
             <Route

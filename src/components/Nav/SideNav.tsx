@@ -113,7 +113,7 @@ export const SideNav: React.FC = () => {
 
         {/* PROFILE LINK */}
         <NavLink
-          to="/profile"
+          to="/settings/profile"
           aria-label="View user profile"
           className={({ isActive }) =>
             `group flex items-center justify-between rounded-lg border p-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
