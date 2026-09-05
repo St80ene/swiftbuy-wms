@@ -16,7 +16,7 @@ import {
   Activity,
   X,
 } from 'lucide-react';
-import { FormEvent, useState, useMemo } from 'react';
+import { type FormEvent, useState, useMemo } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { LoadingScreen } from '../../common/Error/LoadingScreen';
@@ -51,7 +51,7 @@ const itemVariants = {
       duration: 0.5,
       ease: [0.16, 1, 0.3, 1],
     },
-  },
+  } as const,
 };
 
 export default function Login() {
@@ -579,7 +579,11 @@ export default function Login() {
                   whileHover={
                     isSubmitting || shouldReduceMotion
                       ? undefined
-                      : { scale: 1.015, brightness: 1.05 }
+                      : {
+                          scale: 1.015,
+                          filter: 'brightness(1.05)',
+                          transition: { duration: 0.2 },
+                        }
                   }
                   whileTap={
                     isSubmitting || shouldReduceMotion

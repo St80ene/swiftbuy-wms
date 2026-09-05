@@ -13,7 +13,7 @@ export interface BaseModalProps {
 
   onClose: () => void;
 
-  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit?: (e: React.SubmitEvent<HTMLFormElement>) => void;
 
   /**
    * Controls whether the modal renders form action buttons.

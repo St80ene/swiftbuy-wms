@@ -150,7 +150,7 @@ export const SideNav: React.FC = () => {
           className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-950/10 px-3 py-2 text-xs font-medium text-red-400 transition-colors hover:bg-red-900/30 hover:text-red-200 cursor-pointer disabled:opacity-50"
         >
           {isLoggingOut ? (
-            <Loader2 size5={14} className="animate-spin" />
+            <Loader2 size={14} className="animate-spin" />
           ) : (
             <LogOut size={14} />
           )}

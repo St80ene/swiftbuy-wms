@@ -1,4 +1,6 @@
 import type { AuditLog } from '@/interfaces/auditlog';
+import type { IBusiness } from '@/interfaces/business.interface';
+import type { IUser } from '@/interfaces/user.interface';
 import type { PurchaseOrder } from '@/types';
 
 export interface Store {
@@ -6,7 +8,7 @@ export interface Store {
 
   business_id: string;
 
-  business: Business;
+  business: IBusiness;
 
   name: string;
 
@@ -24,7 +26,7 @@ export interface Store {
 
   audit_logs: AuditLog[];
 
-  users: User[];
+  users: IUser[];
 
   purchase_orders: PurchaseOrder[];
 

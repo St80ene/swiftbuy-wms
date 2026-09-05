@@ -4,6 +4,7 @@ import React, {
   useState,
   type Dispatch,
   type SetStateAction,
+  type SubmitEvent,
 } from 'react';
 import { UomType, UomBaseName, UomDisplayName } from '../../../enum/product';
 import BaseModal from '../../common/BaseModal';
@@ -131,7 +132,7 @@ export default function AddProductModal({
     }));
   };
 
-  const handleSubmit = (event: unknown) => {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
 

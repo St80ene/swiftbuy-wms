@@ -35,12 +35,6 @@ export const UserProfilePage: React.FC = () => {
     }
   }, [authUser, navigate]);
 
-  useEffect(() => {
-    if (profile) {
-      console.log('Profile received:', profile?.data?.users[0]);
-    }
-  }, [profile]);
-
   // Loading state
   if (isLoading) {
     return (
@@ -87,7 +81,7 @@ export const UserProfilePage: React.FC = () => {
     );
   }
 
-  const user_profile = profile?.data?.users[0];
+  const user_profile = profile?.users[0];
 
   const fullName =
     user_profile?.first_name && user_profile?.last_name

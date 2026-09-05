@@ -33,10 +33,10 @@ export const usersApi = {
   /**
    * Get a single user
    */
-  getById: async (id: string): Promise<IUser> => {
-    const response = await apiClient.get<IUser>(`/users/${id}`);
+  getById: async (id: string) => {
+    const response = await apiClient.get(`/users/${id}`);
 
-    return response.data;
+    return response.data.data;
   },
 
   /**
