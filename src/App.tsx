@@ -5,41 +5,46 @@ import AppLayout from './layouts/AppLayout';
 import { Products } from './components/Products';
 import { Dashboard } from './components/Dashboard';
 import ProductDetails from './components/Products/ProductDetails';
-// import StocksPage from './features/stocks/pages/StocksPage';
-// import PurchaseOrdersPage from './features/purchase-orders/pages/PurchaseOrdersPage';
+import { ProtectedRoute } from './components/Auth/ProtectedRoute';
+import Login from './components/Auth/Login';
+import { UserProfilePage } from './components/Settings/UserProfilePage';
+import { BusinessSettingsPage } from './components/Settings/BusinessSettingsPage';
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<AppLayout />}>
-          {/* Dashboard */}
-          <Route path="/dashboard" element={<Dashboard />} />
+        {/* Public routes */}
+        <Route path="/login" element={<Login />} />
 
-          {/* Products */}
-          <Route path="/products" element={<Products />} />
+        {/* Protected routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            {/* Dashboard */}
+            <Route path="/dashboard" element={<Dashboard />} />
 
-          {/* Product details */}
+            {/* Profile */}
+            <Route path="/settings/profile" element={<UserProfilePage />} />
 
-          <Route path="/products/:productId" element={<ProductDetails />} />
+            {/* Business Settings */}
+            <Route
+              path="/settings/business"
+              element={<BusinessSettingsPage />}
+            />
 
-          {/* Stocks */}
-          {/* <Route path="/stocks" element={<StocksPage />} /> */}
+            {/* Products */}
+            <Route path="/products" element={<Products />} />
 
-          {/* Purchase Orders */}
-          {/* 
-          <Route
-            path="/purchase-orders"
-            element={<PurchaseOrdersPage />}
-          />
-          */}
+            {/* Product details */}
+            <Route path="/products/:productId" element={<ProductDetails />} />
 
-          {/* Default */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-          {/* 404 */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            {/* Default */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          </Route>
         </Route>
+
+        {/* 404 */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );

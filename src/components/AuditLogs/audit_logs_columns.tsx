@@ -86,7 +86,6 @@ export const getAuditLogColumns = (
       </div>
     ),
   },
-
   {
     key: 'changes',
     header: '',
