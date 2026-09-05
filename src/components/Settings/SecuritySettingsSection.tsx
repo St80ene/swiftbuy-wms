@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { KeyRound } from 'lucide-react';
 import { ChangePasswordModal } from '../Auth/ChangePassword';
 
