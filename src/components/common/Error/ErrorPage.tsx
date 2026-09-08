@@ -14,7 +14,7 @@ export const ErrorPage: React.FC<ErrorPageProps> = ({
   title = 'Something went wrong',
   message = "We ran into an unexpected issue while loading this page. Don't worry, your data is safe.",
   onRetry = () => window.location.reload(),
-  onNavigateHome = () => (window.location.href = '/'),
+  onNavigateHome,
   onReportIssue,
 }) => {
   return (
