@@ -10,6 +10,7 @@ export interface GetAllProductsParams {
   order?: 'ASC' | 'DESC';
   category?: string;
   search?: string;
+  status?: ProductStatus;
 }
 
 // Interface wrapper representing the NestJS backend response envelope structure

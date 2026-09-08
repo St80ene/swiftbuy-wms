@@ -68,7 +68,7 @@ export const Products: React.FC = () => {
       productService.getAllProducts({
         page,
         limit,
-        sortBy: 'createdAt',
+        sortBy: 'created_at',
         search: debouncedSearch,
       }),
     placeholderData: (previousData) => previousData,

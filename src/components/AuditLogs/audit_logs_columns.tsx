@@ -10,11 +10,11 @@ export const getAuditLogColumns = (
     render: (log) => (
       <div>
         <div className="text-xs font-medium text-slate-700">
-          {new Date(log.createdAt).toLocaleDateString()}
+          {new Date(log.created_at).toLocaleDateString()}
         </div>
 
         <div className="text-[10px] text-slate-400 mt-0.5">
-          {new Date(log.createdAt).toLocaleTimeString([], {
+          {new Date(log.created_at).toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
           })}
