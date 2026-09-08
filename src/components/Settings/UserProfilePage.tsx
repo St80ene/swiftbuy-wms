@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect, useState, type FC } from 'react';
 import {
   Building2,
   Store,
@@ -13,102 +13,66 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SecuritySettingsSection } from '@/components/Settings/SecuritySettingsSection';
-import { useGetPersonalProfile } from '@/hooks/useGetPersonalProfile.hooks';
 import { useAuth } from '@/services/auth/hooks/useAuth';
+import { EditProfileModal } from '../User/EditProfileModal';
+import type { IUser } from '@/interfaces/user.interface';
 
-export const UserProfilePage: React.FC = () => {
+export const UserProfilePage: FC = () => {
   const navigate = useNavigate();
 
-  const { user: authUser } = useAuth();
+  const { user } = useAuth();
 
-  const {
-    data: profile,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useGetPersonalProfile(authUser?.id || '');
+  const [profileData, setProfileData] = useState(user);
+
+  const onEditSuccess = (updatedUser: IUser | null | undefined) => {
+    setProfileData(updatedUser);
+  };
+
+  // Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!authUser) {
+    if (!profileData) {
       navigate('/login', { replace: true });
     }
-  }, [authUser, navigate]);
+  }, [profileData, navigate]);
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-full bg-slate-950 p-6 text-slate-100">
-        <div className="flex min-h-[400px] items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-cyan-400" />
-            <p className="text-sm text-slate-400">Loading your profile...</p>
-          </div>
-        </div>
-      </div>
-    );
+  if (!profileData) {
+    return null;
   }
-
-  // Error state
-  if (isError) {
-    return (
-      <div className="min-h-full bg-slate-950 p-6 text-slate-100">
-        <div className="flex min-h-[400px] items-center justify-center">
-          <div className="w-full max-w-md rounded-xl border border-red-900/50 bg-red-950/20 p-6 text-center">
-            <h2 className="text-sm font-bold text-red-300">
-              Unable to load profile
-            </h2>
-
-            <p className="mt-2 text-xs text-slate-400">
-              We couldn't retrieve your profile information. Please try again.
-            </p>
-
-            <button
-              onClick={() => refetch()}
-              className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-red-500"
-            >
-              Try Again
-            </button>
-
-            {error && (
-              <p className="mt-3 text-[10px] text-slate-600">
-                {error instanceof Error ? error.message : 'Unknown error'}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const user_profile = profile?.users[0];
 
   const fullName =
-    user_profile?.first_name && user_profile?.last_name
-      ? `${user_profile.first_name} ${user_profile.last_name}`
-      : user_profile?.first_name || 'User Profile';
+    profileData?.first_name && profileData?.last_name
+      ? `${profileData.first_name} ${profileData.last_name}`
+      : profileData?.first_name || 'User Profile';
 
-  const initials = `${user_profile?.first_name?.[0] || ''}${
-    user_profile?.last_name?.[0] || ''
+  const initials = `${profileData?.first_name?.[0] || ''}${
+    profileData?.last_name?.[0] || ''
   }`.toUpperCase();
 
-  const email =
-    user_profile?.business_email ||
-    user_profile?.business_email ||
-    'No email provided';
+  const email = profileData?.company_email || 'No email provided';
 
-  const roleName = user_profile?.role?.name || 'Authorized Member';
+  const roleName = profileData?.role?.name || 'Authorized Member';
 
-  const businessName =
-    user_profile?.business?.display_name || 'Main Enterprise';
+  const businessName = profileData?.business?.display_name || 'Main Enterprise';
 
-  const storeName = user_profile?.store?.name || 'Primary Warehouse / Store';
+  const storeName = profileData?.store?.name || 'Primary Warehouse / Store';
 
-  const isActive = user_profile?.is_active ?? true;
+  const isActive = profileData?.is_active ?? true;
 
-  const createdAt = user_profile?.created_at
-    ? new Date(user_profile.created_at).toLocaleDateString()
+  const createdAt = profileData?.created_at
+    ? new Date(profileData.created_at).toLocaleDateString()
     : 'Recent';
+
+  // Prepare initial data for the modal
+  const modalInitialData = {
+    first_name: profileData?.first_name || '',
+    last_name: profileData?.last_name || '',
+    phone_number: profileData?.phone_number || '',
+    company_email: email,
+    id: profileData?.id,
+    profile_picture: profileData?.profile_picture || null,
+  };
 
   return (
     <div className="min-h-full bg-slate-950 p-6 text-slate-100">
@@ -134,7 +98,7 @@ export const UserProfilePage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => alert('Edit profile functionality goes here')}
+          onClick={() => setIsEditModalOpen(true)}
           className="flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-cyan-500"
         >
           <Edit3 size={14} />
@@ -306,6 +270,14 @@ export const UserProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        initialData={modalInitialData}
+        onSuccess={onEditSuccess}
+      />
     </div>
   );
 };

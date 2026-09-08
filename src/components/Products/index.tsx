@@ -90,6 +90,7 @@ export const Products: React.FC = () => {
             : 'An error occurred while fetching the product list. Please check your network connection.'
         }
         onRetry={() => refetch()}
+        onNavigateHome={() => navigate('/dashboard')}
       />
     );
   }
