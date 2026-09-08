@@ -1,3 +1,4 @@
+import type { ApiResponse } from '@/interfaces';
 import type { IUser } from '@/interfaces/user.interface';
 import apiClient from '@/services/api';
 
@@ -53,8 +54,14 @@ export const usersApi = {
   /**
    * Update a user
    */
-  update: async (id: string, payload: FormData): Promise<IUser> => {
-    const response = await apiClient.patch<IUser>(`/users/${id}`, payload);
+  update: async (
+    id: string,
+    payload: FormData,
+  ): Promise<ApiResponse<IUser>> => {
+    const response = await apiClient.patch<ApiResponse<IUser>>(
+      `/users/${id}`,
+      payload,
+    );
 
     return response.data;
   },

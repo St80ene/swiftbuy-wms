@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { User, Phone, Info, Camera, X } from 'lucide-react';
 import BaseModal from '../common/BaseModal';
 import { usersApi } from '@/services/user/api/users.api';
+import type { IUser } from '@/interfaces/user.interface';
 
 export interface CloudinaryImage {
   url: string;
@@ -21,7 +22,7 @@ interface EditProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialData: EditProfileData;
-  onSuccess: () => void;
+  onSuccess: (updatedUser: IUser | null | undefined) => void;
 }
 
 interface FormData {
@@ -204,9 +205,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         payload.append('profile_picture', selectedFile);
       }
 
-      await usersApi.update(initialData.id, payload);
+      const { data } = await usersApi.update(initialData.id, payload);
 
-      onSuccess();
+      onSuccess(data);
       onClose();
     } catch (err) {
       console.error('Error updating profile:', err);

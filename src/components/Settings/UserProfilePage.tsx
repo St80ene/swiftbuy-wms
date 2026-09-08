@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect, useState, type FC } from 'react';
 import {
   Building2,
   Store,
@@ -15,57 +15,63 @@ import { useNavigate } from 'react-router-dom';
 import { SecuritySettingsSection } from '@/components/Settings/SecuritySettingsSection';
 import { useAuth } from '@/services/auth/hooks/useAuth';
 import { EditProfileModal } from '../User/EditProfileModal';
+import type { IUser } from '@/interfaces/user.interface';
 
-export const UserProfilePage: React.FC = () => {
+export const UserProfilePage: FC = () => {
   const navigate = useNavigate();
 
-  const { user: user_profile } = useAuth();
+  const { user } = useAuth();
+
+  const [profileData, setProfileData] = useState(user);
+
+  const onEditSuccess = (updatedUser: IUser | null | undefined) => {
+    setProfileData(updatedUser);
+  };
 
   // Modal State
-  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!user_profile) {
+    if (!profileData) {
       navigate('/login', { replace: true });
     }
-  }, [user_profile, navigate]);
+  }, [profileData, navigate]);
 
-  if (!user_profile) {
+  if (!profileData) {
     return null;
   }
 
   const fullName =
-    user_profile?.first_name && user_profile?.last_name
-      ? `${user_profile.first_name} ${user_profile.last_name}`
-      : user_profile?.first_name || 'User Profile';
+    profileData?.first_name && profileData?.last_name
+      ? `${profileData.first_name} ${profileData.last_name}`
+      : profileData?.first_name || 'User Profile';
 
-  const initials = `${user_profile?.first_name?.[0] || ''}${
-    user_profile?.last_name?.[0] || ''
+  const initials = `${profileData?.first_name?.[0] || ''}${
+    profileData?.last_name?.[0] || ''
   }`.toUpperCase();
 
-  const email = user_profile?.company_email || 'No email provided';
+  const email = profileData?.company_email || 'No email provided';
 
-  const roleName = user_profile?.role?.name || 'Authorized Member';
+  const roleName = profileData?.role?.name || 'Authorized Member';
 
-  const businessName =
-    user_profile?.business?.display_name || 'Main Enterprise';
+  const businessName = profileData?.business?.display_name || 'Main Enterprise';
 
-  const storeName = user_profile?.store?.name || 'Primary Warehouse / Store';
+  const storeName = profileData?.store?.name || 'Primary Warehouse / Store';
 
-  const isActive = user_profile?.is_active ?? true;
+  const isActive = profileData?.is_active ?? true;
 
-  const createdAt = user_profile?.created_at
-    ? new Date(user_profile.created_at).toLocaleDateString()
+  const createdAt = profileData?.created_at
+    ? new Date(profileData.created_at).toLocaleDateString()
     : 'Recent';
 
   // Prepare initial data for the modal
   const modalInitialData = {
-    first_name: user_profile?.first_name || '',
-    last_name: user_profile?.last_name || '',
-    phone_number: user_profile?.phone_number || '',
+    first_name: profileData?.first_name || '',
+    last_name: profileData?.last_name || '',
+    phone_number: profileData?.phone_number || '',
     company_email: email,
-    id: user_profile?.id,
-    profile_picture: user_profile?.profile_picture || null,
+    id: profileData?.id,
+    profile_picture: profileData?.profile_picture || null,
   };
 
   return (
@@ -270,9 +276,7 @@ export const UserProfilePage: React.FC = () => {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         initialData={modalInitialData}
-        onSuccess={() => {
-          // Handle profile update success (e.g., trigger a toast or reload user state if supported)
-        }}
+        onSuccess={onEditSuccess}
       />
     </div>
   );

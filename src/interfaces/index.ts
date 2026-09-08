@@ -13,9 +13,9 @@ export interface PaginationMeta {
   hasPreviousPage: boolean;
 }
 
-export interface ApiResponse {
+export interface ApiResponse<T = Record<string, unknown>> {
   status: boolean;
   message: string;
-  data?: Record<string, unknown>;
+  data?: T;
   error?: unknown;
 }
