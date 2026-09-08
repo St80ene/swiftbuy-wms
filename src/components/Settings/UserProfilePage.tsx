@@ -64,6 +64,8 @@ export const UserProfilePage: React.FC = () => {
     last_name: user_profile?.last_name || '',
     phone_number: user_profile?.phone_number || '',
     company_email: email,
+    id: user_profile?.id,
+    profile_picture: user_profile?.profile_picture || null,
   };
 
   return (

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { User, Phone, Info, Camera, X } from 'lucide-react';
 import BaseModal from '../common/BaseModal';
+import { usersApi } from '@/services/user/api/users.api';
 
 export interface CloudinaryImage {
   url: string;
@@ -8,6 +9,7 @@ export interface CloudinaryImage {
 }
 
 export interface EditProfileData {
+  id: string;
   first_name: string;
   last_name: string;
   phone_number?: string;
@@ -31,7 +33,6 @@ interface FormData {
 type FormField = keyof FormData;
 
 const MAX_PROFILE_PICTURE_SIZE = 5 * 1024 * 1024;
-
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export const EditProfileModal: React.FC<EditProfileModalProps> = ({
@@ -42,38 +43,19 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  /**
-   * Form state.
-   *
-   * We initialize this from initialData when the component is created.
-   * Field changes are then handled explicitly through handleFieldChange.
-   */
+  // Initialize inputs as empty so current values act as placeholders
   const [formData, setFormData] = useState<FormData>({
     first_name: initialData.first_name || '',
     last_name: initialData.last_name || '',
     phone_number: initialData.phone_number || '',
   });
 
-  /**
-   * Keep the original Cloudinary image separately.
-   *
-   * This allows us to determine whether the user actually changed
-   * their profile picture.
-   */
   const [currentProfilePicture] = useState<CloudinaryImage | null>(
     initialData.profile_picture ?? null,
   );
 
-  /**
-   * The actual File selected by the user.
-   *
-   * This is what gets appended to FormData and sent to the API.
-   */
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  /**
-   * Local preview URL for a newly selected image.
-   */
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     initialData.profile_picture?.url ?? null,
   );
@@ -81,24 +63,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
-  /**
-   * Handles all normal form field changes.
-   */
   const handleFieldChange = (field: FormField, value: string) => {
     setFormData((previous) => ({
       ...previous,
       [field]: value,
     }));
 
-    // Clear the previous validation error while the user edits.
     if (error) {
       setError(undefined);
     }
   };
 
-  /**
-   * Handles profile picture selection.
-   */
   const handleProfilePictureChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -108,14 +83,12 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       return;
     }
 
-    // Validate file type.
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
       setError('Profile picture must be a JPG, PNG, or WEBP image.');
       event.target.value = '';
       return;
     }
 
-    // Validate file size.
     if (file.size > MAX_PROFILE_PICTURE_SIZE) {
       setError('Profile picture must be less than 5MB.');
       event.target.value = '';
@@ -125,25 +98,12 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     setSelectedFile(file);
     setError(undefined);
 
-    /**
-     * Create a temporary preview.
-     *
-     * This URL is only for the browser preview.
-     * The actual File is stored in selectedFile and sent to the API.
-     */
     const objectUrl = URL.createObjectURL(file);
-
     setPreviewUrl(objectUrl);
   };
 
-  /**
-   * Remove the newly selected profile picture.
-   *
-   * If there was already a Cloudinary image, we restore it.
-   */
   const handleRemoveProfilePicture = () => {
     setSelectedFile(null);
-
     setPreviewUrl(currentProfilePicture?.url ?? null);
 
     if (fileInputRef.current) {
@@ -153,72 +113,45 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     setError(undefined);
   };
 
-  /**
-   * Validate the form before submitting.
-   */
   const validateForm = (): string | undefined => {
     const firstName = formData.first_name.trim();
     const lastName = formData.last_name.trim();
     const phoneNumber = formData.phone_number.trim();
 
-    if (!firstName) {
-      return 'First name is required.';
+    if (firstName) {
+      if (firstName.length < 2) {
+        return 'First name must be at least 2 characters.';
+      }
+      if (firstName.length > 100) {
+        return 'First name cannot exceed 100 characters.';
+      }
     }
 
-    if (firstName.length < 2) {
-      return 'First name must be at least 2 characters.';
+    if (lastName) {
+      if (lastName.length < 2) {
+        return 'Last name must be at least 2 characters.';
+      }
+      if (lastName.length > 100) {
+        return 'Last name cannot exceed 100 characters.';
+      }
     }
 
-    if (firstName.length > 100) {
-      return 'First name cannot exceed 100 characters.';
-    }
-
-    if (!lastName) {
-      return 'Last name is required.';
-    }
-
-    if (lastName.length < 2) {
-      return 'Last name must be at least 2 characters.';
-    }
-
-    if (lastName.length > 100) {
-      return 'Last name cannot exceed 100 characters.';
-    }
-
-    if (phoneNumber && phoneNumber.length > 100) {
-      return 'Phone number cannot exceed 100 characters.';
-    }
-
-    /**
-     * Basic phone validation.
-     *
-     * Allows:
-     * +234 801 234 5678
-     * 08012345678
-     * +234-801-234-5678
-     */
-    if (phoneNumber && !/^[+]?[0-9][0-9\s\-()]{6,99}$/.test(phoneNumber)) {
-      return 'Please enter a valid phone number.';
+    if (phoneNumber) {
+      if (phoneNumber.length > 100) {
+        return 'Phone number cannot exceed 100 characters.';
+      }
+      if (!/^[+]?[0-9][0-9\s\-()]{6,99}$/.test(phoneNumber)) {
+        return 'Please enter a valid phone number.';
+      }
     }
 
     return undefined;
   };
 
-  /**
-   * Determines whether the user actually changed anything.
-   */
   const hasChanges = (): boolean => {
-    const firstNameChanged =
-      formData.first_name.trim() !== initialData.first_name;
-
-    const lastNameChanged = formData.last_name.trim() !== initialData.last_name;
-
-    const phoneNumberChanged =
-      formData.phone_number.trim() !== (initialData.phone_number ?? '');
-
-    /**
-     * A selected file means the profile picture changed.
-     */
+    const firstNameChanged = formData.first_name.trim() !== '';
+    const lastNameChanged = formData.last_name.trim() !== '';
+    const phoneNumberChanged = formData.phone_number.trim() !== '';
     const profilePictureChanged = selectedFile !== null;
 
     return (
@@ -229,17 +162,15 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     );
   };
 
-  /**
-   * Submit only fields that have actually changed.
-   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isSubmitting) {
+      return;
+    }
+
     setError(undefined);
 
-    /**
-     * Validate before doing anything with the API.
-     */
     const validationError = validateForm();
 
     if (validationError) {
@@ -247,9 +178,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       return;
     }
 
-    /**
-     * Don't make an unnecessary API request.
-     */
     if (!hasChanges()) {
       setError('No changes were made to your profile.');
       return;
@@ -260,39 +188,23 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     try {
       const payload = new FormData();
 
-      /**
-       * Only append changed text fields.
-       */
-      if (formData.first_name.trim() !== initialData.first_name) {
+      if (formData.first_name.trim() !== '') {
         payload.append('first_name', formData.first_name.trim());
       }
 
-      if (formData.last_name.trim() !== initialData.last_name) {
+      if (formData.last_name.trim() !== '') {
         payload.append('last_name', formData.last_name.trim());
       }
 
-      if (formData.phone_number.trim() !== (initialData.phone_number ?? '')) {
+      if (formData.phone_number.trim() !== '') {
         payload.append('phone_number', formData.phone_number.trim());
       }
 
-      /**
-       * Only append profile_picture when a new File
-       * was actually selected.
-       */
       if (selectedFile) {
         payload.append('profile_picture', selectedFile);
       }
 
-      /**
-       * Replace this with your actual API call.
-       *
-       * Example:
-       *
-       * await authApi.updateProfile(payload);
-       */
-      // await authApi.updateProfile(payload);
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await usersApi.update(initialData.id, payload);
 
       onSuccess();
       onClose();
@@ -308,8 +220,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   };
 
   const initials =
-    `${formData.first_name?.[0] ?? ''}${
-      formData.last_name?.[0] ?? ''
+    `${initialData.first_name?.[0] ?? ''}${
+      initialData.last_name?.[0] ?? ''
     }`.toUpperCase() || 'U';
 
   return (
@@ -320,17 +232,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       onClose={onClose}
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
-      submitLabel="Update Profile"
+      submitLabel={isSubmitting ? 'Updating Profile...' : 'Update Profile'}
       error={error}
     >
-      <div className="space-y-5">
+      <fieldset disabled={isSubmitting} className="space-y-5 border-0 p-0 m-0">
         {/* Profile Picture */}
         <div className="flex items-center gap-4">
           <div className="relative">
             {previewUrl ? (
               <img
                 src={previewUrl}
-                alt={`${formData.first_name} ${formData.last_name}`}
+                alt={`${initialData.first_name} ${initialData.last_name}`}
                 className="h-16 w-16 rounded-full border border-slate-700 object-cover"
               />
             ) : (
@@ -342,10 +254,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-900 bg-cyan-600 text-white transition-colors hover:bg-cyan-500"
+              disabled={isSubmitting}
+              className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-900 bg-cyan-600 text-white transition-colors hover:bg-cyan-500 disabled:opacity-50"
               aria-label="Change profile picture"
             >
-              <Camera size={11} />
+              <Camera size={11} className="cursor-pointer" />
             </button>
           </div>
 
@@ -362,7 +275,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-[11px] font-semibold text-cyan-400 transition-colors hover:text-cyan-300"
+                disabled={isSubmitting}
+                className="text-[11px] cursor-pointer font-semibold text-cyan-400 transition-colors hover:text-cyan-300 disabled:opacity-50"
               >
                 Change photo
               </button>
@@ -371,10 +285,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 <button
                   type="button"
                   onClick={handleRemoveProfilePicture}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 transition-colors hover:text-red-400"
+                  disabled={isSubmitting}
+                  className="flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-slate-500 transition-colors hover:text-red-400 disabled:opacity-50"
                 >
                   <X size={12} />
-                  Cancel
+                  Remove photo
                 </button>
               )}
             </div>
@@ -408,9 +323,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               <input
                 id="first_name"
                 type="text"
-                required
                 maxLength={100}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                placeholder={initialData.first_name}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10 disabled:opacity-50"
                 value={formData.first_name}
                 onChange={(e) =>
                   handleFieldChange('first_name', e.target.value)
@@ -436,9 +351,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               <input
                 id="last_name"
                 type="text"
-                required
                 maxLength={100}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                placeholder={initialData.last_name}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10 disabled:opacity-50"
                 value={formData.last_name}
                 onChange={(e) => handleFieldChange('last_name', e.target.value)}
               />
@@ -465,8 +380,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               id="phone"
               type="tel"
               maxLength={100}
-              placeholder="+234..."
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+              placeholder={initialData.phone_number || '+234...'}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10 disabled:opacity-50"
               value={formData.phone_number}
               onChange={(e) =>
                 handleFieldChange('phone_number', e.target.value)
@@ -490,7 +405,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             </p>
           </div>
         </div>
-      </div>
+      </fieldset>
     </BaseModal>
   );
 };

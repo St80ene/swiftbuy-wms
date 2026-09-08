@@ -14,6 +14,8 @@ export interface UpdateUserPayload {
   last_name?: string;
   email?: string;
   role_id?: string;
+  profile_picture?: File | null;
+  phone_number?: string | null;
 }
 
 export interface ChangeUserRolePayload {
@@ -51,7 +53,7 @@ export const usersApi = {
   /**
    * Update a user
    */
-  update: async (id: string, payload: UpdateUserPayload): Promise<IUser> => {
+  update: async (id: string, payload: FormData): Promise<IUser> => {
     const response = await apiClient.patch<IUser>(`/users/${id}`, payload);
 
     return response.data;
