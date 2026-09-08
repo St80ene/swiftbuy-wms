@@ -1,11 +1,11 @@
 import { createContext } from 'react';
-import type { AuthUser } from '../types/auth.type';
+import type { IUser } from '@/interfaces/user.interface';
 
 export interface AuthContextValue {
-  user: AuthUser | null;
+  user: IUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<AuthUser>;
+  login: (email: string, password: string) => Promise<IUser>;
   logout: () => Promise<void>;
 }
 

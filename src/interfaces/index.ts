@@ -12,3 +12,10 @@ export interface PaginationMeta {
   hasNextPage: boolean;
   hasPreviousPage: boolean;
 }
+
+export interface ApiResponse {
+  status: boolean;
+  message: string;
+  data?: Record<string, unknown>;
+  error?: unknown;
+}

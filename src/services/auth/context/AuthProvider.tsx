@@ -1,9 +1,11 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
+import { AxiosError } from 'axios';
 
-import { authApi } from '../api/auth.api';
+import { authApi, type LoginPayload } from '../api/auth.api';
 import { tokenStorage } from '../utils/token_storage.util';
 import { AuthContext } from './AuthContext';
+import type { IUser } from '@/interfaces/user.interface';
 
 interface Props {
   children: ReactNode;
@@ -12,59 +14,64 @@ interface Props {
 export function AuthProvider({ children }: Props) {
   const queryClient = useQueryClient();
 
-  // Keep token existence in React state so changes trigger a re-render
   const [hasAccessToken, setHasAccessToken] = useState(
     () => !!tokenStorage.getAccessToken(),
   );
+  const [user, setUser] = useState<IUser | null>(null);
 
-  const { data: user = null, isLoading } = useQuery({
-    queryKey: ['auth', 'me'],
-    queryFn: authApi.profile,
-    enabled: hasAccessToken,
-    retry: false,
+  // TanStack Query Mutation for login handling state, loading, and network issues
+  const loginMutation = useMutation({
+    mutationFn: (credentials: LoginPayload) => authApi.login(credentials),
+    onSuccess: (response) => {
+      tokenStorage.setTokens(response.accessToken, response.refreshToken);
+      setHasAccessToken(true);
+      setUser(response.user);
+    },
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: () => authApi.logout(),
+    onSettled: () => {
+      tokenStorage.clearTokens();
+      setHasAccessToken(false);
+      setUser(null);
+      queryClient.removeQueries({
+        queryKey: ['auth'],
+      });
+    },
   });
 
   const login = async (email: string, password: string) => {
-    const response = await authApi.login({
-      email,
-      password,
-    });
-
-    // Save tokens
-    tokenStorage.setTokens(response.accessToken, response.refreshToken);
-
-    // Tell React that authentication now exists
-    setHasAccessToken(true);
-
-    // Cache the user returned by login
-    queryClient.setQueryData(['auth', 'me'], response.user);
-
-    return response.user;
+    try {
+      const response = await loginMutation.mutateAsync({ email, password });
+      return response.user;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        if (!error.response) {
+          throw new Error(
+            'Network error. Please check your internet connection and try again.',
+            { cause: error },
+          );
+        }
+        throw new Error(
+          error.response.data?.message || 'Invalid email or password',
+          { cause: error },
+        );
+      }
+      throw error;
+    }
   };
 
   const logout = async () => {
-    try {
-      await authApi.logout();
-    } finally {
-      // Clear authentication first
-      tokenStorage.clearTokens();
-
-      // Update React state
-      setHasAccessToken(false);
-
-      // Remove authenticated user
-      queryClient.removeQueries({
-        queryKey: ['auth', 'me'],
-      });
-    }
+    await logoutMutation.mutateAsync();
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isLoading: hasAccessToken && isLoading,
-        isAuthenticated: !!user,
+        isLoading: loginMutation.isPending || logoutMutation.isPending,
+        isAuthenticated: !!hasAccessToken && !!user,
         login,
         logout,
       }}

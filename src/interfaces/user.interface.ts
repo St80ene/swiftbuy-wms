@@ -1,17 +1,20 @@
 import type { IBusiness } from './business.interface';
 import type { IStore } from './store.interface';
 import type { Role } from './role.interface';
+import type { CloudinaryImage } from '@/types';
 
 export interface IUser {
   id: string;
 
   first_name: string;
   last_name: string;
-  business_email: string;
+  company_email: string;
 
   role_id: string;
   business_id: string;
   store_id: string;
+  phone_number?: string | null;
+  profile_picture?: CloudinaryImage | null;
 
   is_active: boolean;
 

@@ -13,75 +13,26 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SecuritySettingsSection } from '@/components/Settings/SecuritySettingsSection';
-import { useGetPersonalProfile } from '@/hooks/useGetPersonalProfile.hooks';
 import { useAuth } from '@/services/auth/hooks/useAuth';
+import { EditProfileModal } from '../User/EditProfileModal';
 
 export const UserProfilePage: React.FC = () => {
   const navigate = useNavigate();
 
-  const { user: authUser } = useAuth();
+  const { user: user_profile } = useAuth();
 
-  const {
-    data: profile,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useGetPersonalProfile(authUser?.id || '');
+  // Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
 
   useEffect(() => {
-    if (!authUser) {
+    if (!user_profile) {
       navigate('/login', { replace: true });
     }
-  }, [authUser, navigate]);
+  }, [user_profile, navigate]);
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-full bg-slate-950 p-6 text-slate-100">
-        <div className="flex min-h-[400px] items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-cyan-400" />
-            <p className="text-sm text-slate-400">Loading your profile...</p>
-          </div>
-        </div>
-      </div>
-    );
+  if (!user_profile) {
+    return null;
   }
-
-  // Error state
-  if (isError) {
-    return (
-      <div className="min-h-full bg-slate-950 p-6 text-slate-100">
-        <div className="flex min-h-[400px] items-center justify-center">
-          <div className="w-full max-w-md rounded-xl border border-red-900/50 bg-red-950/20 p-6 text-center">
-            <h2 className="text-sm font-bold text-red-300">
-              Unable to load profile
-            </h2>
-
-            <p className="mt-2 text-xs text-slate-400">
-              We couldn't retrieve your profile information. Please try again.
-            </p>
-
-            <button
-              onClick={() => refetch()}
-              className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-red-500"
-            >
-              Try Again
-            </button>
-
-            {error && (
-              <p className="mt-3 text-[10px] text-slate-600">
-                {error instanceof Error ? error.message : 'Unknown error'}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const user_profile = profile?.users[0];
 
   const fullName =
     user_profile?.first_name && user_profile?.last_name
@@ -92,10 +43,7 @@ export const UserProfilePage: React.FC = () => {
     user_profile?.last_name?.[0] || ''
   }`.toUpperCase();
 
-  const email =
-    user_profile?.business_email ||
-    user_profile?.business_email ||
-    'No email provided';
+  const email = user_profile?.company_email || 'No email provided';
 
   const roleName = user_profile?.role?.name || 'Authorized Member';
 
@@ -109,6 +57,14 @@ export const UserProfilePage: React.FC = () => {
   const createdAt = user_profile?.created_at
     ? new Date(user_profile.created_at).toLocaleDateString()
     : 'Recent';
+
+  // Prepare initial data for the modal
+  const modalInitialData = {
+    first_name: user_profile?.first_name || '',
+    last_name: user_profile?.last_name || '',
+    phone_number: user_profile?.phone_number || '',
+    company_email: email,
+  };
 
   return (
     <div className="min-h-full bg-slate-950 p-6 text-slate-100">
@@ -134,7 +90,7 @@ export const UserProfilePage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => alert('Edit profile functionality goes here')}
+          onClick={() => setIsEditModalOpen(true)}
           className="flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-cyan-500"
         >
           <Edit3 size={14} />
@@ -306,6 +262,16 @@ export const UserProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        initialData={modalInitialData}
+        onSuccess={() => {
+          // Handle profile update success (e.g., trigger a toast or reload user state if supported)
+        }}
+      />
     </div>
   );
 };
