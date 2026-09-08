@@ -19,3 +19,11 @@ export interface ApiResponse<T = Record<string, unknown>> {
   data?: T;
   error?: unknown;
 }
+
+export interface BasePaginationParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  order?: 'ASC' | 'DESC';
+  [key: string]: unknown;
+}

@@ -3,14 +3,14 @@ import type { ApiResponse, GetAllProductsParams } from '../interfaces/products';
 import apiClient from './api';
 import type { Product, ProductsResponse } from '@/types';
 
-// Single source of truth for the resource sub-route
 const PRODUCTS_RESOURCE = '/products';
 
-// 2. Abstracted product endpoints container module
 export const productService = {
   /**
-   * Fetches paginated, sorted, and optionally category-filtered products.
-   * Leverages Axios config params to build clean URL query strings safely.
+   * Retrieves a paginated collection of products belonging to the
+   * authenticated user's business.
+   *
+   * Supports searching, status filtering, sorting, and pagination.
    */
   getAllProducts: async (
     params: GetAllProductsParams = {},
@@ -18,12 +18,10 @@ export const productService = {
     const {
       page = 1,
       limit = 10,
-      search = '',
+      search,
+      status,
+      sortBy = 'created_at',
       order = 'DESC',
-
-      // sortBy = 'createdAt',
-      // order = 'DESC',
-      // category,
     } = params;
 
     const response = await apiClient.get<ApiResponse<ProductsResponse>>(
@@ -32,10 +30,10 @@ export const productService = {
         params: {
           page,
           limit,
-          search,
-          // sortBy,
+          ...(search && { search }),
+          ...(status && { status }),
+          ...(sortBy && { sortBy }),
           order,
-          // ...(category && { category }), // Conditionally appends key if filter exists
         },
       },
     );
@@ -44,47 +42,67 @@ export const productService = {
   },
 
   /**
-   * Fetches a single product record via its unique identifier string.
+   * Retrieves a single product by its UUID.
+   *
+   * The backend also returns the product's category and stock relationships.
    */
   getProductByID: async (productId: string): Promise<Product> => {
     const response = await apiClient.get<ApiResponse<Product>>(
       `${PRODUCTS_RESOURCE}/${productId}`,
     );
+
     return response.data.data;
   },
 
   /**
-   * Legacy standalone method to get products by category.
-   * Maps internally to the modular getAllProducts configuration function.
-   */
-  getProductsByCategory: async (
-    categoryId: string,
-  ): Promise<ProductsResponse> => {
-    return productService.getAllProducts({ category: categoryId });
-  },
-
-  /**
-   * Retrieves paginated audit logs for a product.
+   * Retrieves paginated audit logs for a specific product.
    *
    * @param productId - UUID of the product.
-   * @param params - Pagination and filtering parameters.
-   * @returns Paginated audit logs for the product.
+   * @param params - Product pagination, search, status, and sorting parameters.
+   * @returns Paginated audit logs associated with the product.
    */
   getProductAuditLogs: async (
     productId: string,
-    params?: GetAllProductsParams,
-  ) => {
+    params: GetAllProductsParams = {},
+  ): Promise<ProductAuditLogsResponse<AuditLog>> => {
     const response = await apiClient.get<
       ApiResponse<ProductAuditLogsResponse<AuditLog>>
     >(`${PRODUCTS_RESOURCE}/${productId}/audit-logs`, {
-      params,
+      params: {
+        page: params.page ?? 1,
+        limit: params.limit ?? 10,
+        ...(params.search && { search: params.search }),
+        ...(params.status && { status: params.status }),
+        ...(params.sortBy && { sortBy: params.sortBy }),
+        ...(params.order && { order: params.order }),
+      },
     });
 
     return response.data.data;
   },
 
   /**
-   * Sends a payload blueprint to the backend service to generate a new product asset.
+   * Retrieves inventory health metrics for the authenticated user's business.
+   *
+   * These metrics are used by the dashboard to display the current state
+   * of the product inventory.
+   */
+  getInventoryHealth: async () => {
+    const response = await apiClient.get(
+      `${PRODUCTS_RESOURCE}/inventory-health`,
+    );
+
+    return response.data.data;
+  },
+
+  /**
+   * Creates a new product.
+   *
+   * Product images must be appended to the FormData using the `images`
+   * field name. The backend accepts up to 5 images.
+   *
+   * @param productData - Multipart form data containing product details
+   * and optional product images.
    */
   createProduct: async (productData: FormData): Promise<Product> => {
     const response = await apiClient.post<ApiResponse<Product>>(
@@ -96,9 +114,20 @@ export const productService = {
         },
       },
     );
+
     return response.data.data;
   },
 
+  /**
+   * Updates an existing product.
+   *
+   * Product images must be appended to the FormData using the `images`
+   * field name. The backend accepts up to 5 images.
+   *
+   * @param productId - UUID of the product to update.
+   * @param productData - Multipart form data containing the fields to update
+   * and optional product images.
+   */
   updateProduct: async (
     productId: string,
     productData: FormData,
@@ -112,16 +141,31 @@ export const productService = {
         },
       },
     );
+
+    return response.data.data;
+  },
+
+  /**
+   * Soft-deletes a product.
+   *
+   * @param productId - UUID of the product to remove.
+   */
+  removeProduct: async (productId: string): Promise<null> => {
+    const response = await apiClient.delete<ApiResponse<null>>(
+      `${PRODUCTS_RESOURCE}/${productId}`,
+    );
+
     return response.data.data;
   },
 };
 
-// Backwards-compatibility export wrappers for standard decoupled imports
+// Backwards-compatible named exports.
 export const {
   getAllProducts,
   getProductByID,
-  getProductsByCategory,
+  getProductAuditLogs,
+  getInventoryHealth,
   createProduct,
   updateProduct,
-  getProductAuditLogs,
+  removeProduct,
 } = productService;

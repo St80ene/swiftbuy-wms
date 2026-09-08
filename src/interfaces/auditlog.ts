@@ -6,11 +6,11 @@ export interface AuditLog {
   action: string;
   entity: string;
   entityId: string;
-  createdAt: Date;
+  created_at: Date;
   userId: string | null;
   metadata: {
     productName?: string;
-    createdAt?: string;
+    created_at?: string;
     reason?: string;
   };
   oldValue: Record<string, unknown> | null;

@@ -34,7 +34,7 @@ const AuditLogModal: FC<AuditLogDetailsModalProps> = ({
 
   const changedFields = getChangedFields(auditLog.oldValue, auditLog.newValue);
 
-  const date = new Date(String(auditLog.createdAt));
+  const date = new Date(String(auditLog.created_at));
 
   return (
     <BaseModal
