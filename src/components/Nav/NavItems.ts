@@ -2,10 +2,14 @@ import type { LucideIcon } from 'lucide-react';
 import { ViewPermission } from '@/enum/view_permission.enum';
 import {
   ArrowLeftRight,
+  BarChart3,
+  Boxes,
+  FileText,
   LayoutDashboard,
   Package,
   Settings,
   ShoppingCart,
+  Store,
   Tags,
   Truck,
   UserCircle,
@@ -16,30 +20,8 @@ export interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
-
-  /**
-   * Optional badge displayed beside the navigation label.
-   */
   badge?: string | number;
-
-  /**
-   * Permissions required to access this navigation item.
-   *
-   * By default, all listed permissions are required.
-   */
   permissions?: ViewPermission[];
-
-  /**
-   * Determines how multiple permissions are evaluated.
-   *
-   * all:
-   * User must have every permission.
-   *
-   * any:
-   * User must have at least one permission.
-   *
-   * Defaults to "all".
-   */
   permissionMode?: 'all' | 'any';
 }
 
@@ -50,13 +32,10 @@ export interface NavSection {
 
 export const NAV_SECTIONS: NavSection[] = [
   /**
-   * =========================================================
-   * OVERVIEW
-   * =========================================================
+   * OVERVIEW & ANALYTICS
    */
   {
     label: 'Overview',
-
     items: [
       {
         to: '/dashboard',
@@ -64,17 +43,20 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: LayoutDashboard,
         permissions: [ViewPermission.DASHBOARD_VIEW],
       },
+      {
+        to: '/reports',
+        label: 'Reports',
+        icon: BarChart3,
+        permissions: [ViewPermission.REPORTS_VIEW],
+      },
     ],
   },
 
   /**
-   * =========================================================
-   * INVENTORY
-   * =========================================================
+   * INVENTORY & STOCKS
    */
   {
     label: 'Inventory',
-
     items: [
       {
         to: '/products',
@@ -82,14 +64,18 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: Package,
         permissions: [ViewPermission.PRODUCTS_VIEW],
       },
-
+      {
+        to: '/stocks',
+        label: 'Stocks',
+        icon: Boxes,
+        permissions: [ViewPermission.STOCKS_VIEW],
+      },
       {
         to: '/categories',
         label: 'Categories',
         icon: Tags,
         permissions: [ViewPermission.CATEGORIES_VIEW],
       },
-
       {
         to: '/stock-movements',
         label: 'Stock Movements',
@@ -100,13 +86,10 @@ export const NAV_SECTIONS: NavSection[] = [
   },
 
   /**
-   * =========================================================
    * PROCUREMENT
-   * =========================================================
    */
   {
     label: 'Procurement',
-
     items: [
       {
         to: '/purchase-orders',
@@ -114,7 +97,6 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: ShoppingCart,
         permissions: [ViewPermission.PURCHASE_ORDERS_VIEW],
       },
-
       {
         to: '/suppliers',
         label: 'Suppliers',
@@ -125,31 +107,37 @@ export const NAV_SECTIONS: NavSection[] = [
   },
 
   /**
-   * =========================================================
-   * ADMINISTRATION
-   * =========================================================
+   * ADMINISTRATION & AUDITS
    */
   {
     label: 'Administration',
-
     items: [
+      {
+        to: '/stores',
+        label: 'Stores',
+        icon: Store,
+        permissions: [ViewPermission.STORES_VIEW],
+      },
       {
         to: '/users',
         label: 'Users',
         icon: Users,
         permissions: [ViewPermission.USERS_VIEW],
       },
+      {
+        to: '/audit-logs',
+        label: 'Audit Logs',
+        icon: FileText,
+        permissions: [ViewPermission.AUDIT_LOGS_VIEW],
+      },
     ],
   },
 
   /**
-   * =========================================================
    * SETTINGS
-   * =========================================================
    */
   {
     label: 'Settings',
-
     items: [
       {
         to: '/settings/business',
@@ -157,7 +145,6 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: Settings,
         permissions: [ViewPermission.BUSINESS_VIEW],
       },
-
       {
         to: '/settings/profile',
         label: 'Profile',

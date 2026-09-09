@@ -11,49 +11,12 @@ import type { ViewPermission } from '@/enum/view_permission.enum';
 
 export const SideNav: React.FC = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   const navigate = useNavigate();
-
   const { logout, user } = useAuth();
 
-  /**
-   * ---------------------------------------------------------
-   * Current Role
-   * ---------------------------------------------------------
-   */
   const currentRole = user?.role?.name ?? UserRole.CASHIER;
-
-  /**
-   * ---------------------------------------------------------
-   * Super Admin
-   * ---------------------------------------------------------
-   *
-   * Super Admin has access to every navigation item.
-   *
-   * NOTE:
-   * This only controls frontend visibility.
-   * Backend authorization must still enforce permissions.
-   */
   const isSuperAdmin = currentRole === UserRole.SUPER_ADMIN;
 
-  /**
-   * ---------------------------------------------------------
-   * User Permissions
-   * ---------------------------------------------------------
-   *
-   * The backend should expose permissions directly
-   * through the role:
-   *
-   * user.role.rolePermissions.map(rp => rp.permission.name)
-   *
-   * Example:
-   *
-   * [
-   *   'products.view',
-   *   'products.create',
-   *   'stock.view'
-   * ]
-   */
   const userPermissions = useMemo(
     () =>
       new Set(
@@ -64,71 +27,27 @@ export const SideNav: React.FC = () => {
     [user?.role?.rolePermissions],
   );
 
-  /**
-   * ---------------------------------------------------------
-   * Permission Check
-   * ---------------------------------------------------------
-   */
   const hasViewPermission = (permission: ViewPermission): boolean => {
-    if (isSuperAdmin) {
-      return true;
-    }
-
+    if (isSuperAdmin) return true;
     return userPermissions.has(permission);
   };
 
-  /**
-   * ---------------------------------------------------------
-   * Navigation Access
-   * ---------------------------------------------------------
-   */
   const canAccessNavItem = (item: NavItem): boolean => {
-    /**
-     * Navigation items without permissions
-     * are available to authenticated users.
-     */
-    if (!item.permissions || item.permissions.length === 0) {
-      return true;
-    }
-
-    /**
-     * ANY permission mode.
-     */
-    if (item.permissionMode === 'any') {
+    if (!item.permissions || item.permissions.length === 0) return true;
+    if (item.permissionMode === 'any')
       return item.permissions.some(hasViewPermission);
-    }
-
-    /**
-     * ALL permission mode.
-     *
-     * This is the default.
-     */
     return item.permissions.every(hasViewPermission);
   };
 
-  /**
-   * ---------------------------------------------------------
-   * Visible Navigation
-   * ---------------------------------------------------------
-   *
-   * Filter the individual items first,
-   * then remove sections that have no visible items.
-   */
   const visibleSections = useMemo(
     () =>
       NAV_SECTIONS.map((section) => ({
         ...section,
-
         items: section.items.filter(canAccessNavItem),
       })).filter((section) => section.items.length > 0),
     [userPermissions, isSuperAdmin],
   );
 
-  /**
-   * ---------------------------------------------------------
-   * Role Configuration
-   * ---------------------------------------------------------
-   */
   const roleStyle = ROLE_CONFIG[currentRole] ?? {
     label: 'Admin',
     color: 'text-cyan-400',
@@ -137,35 +56,16 @@ export const SideNav: React.FC = () => {
   };
 
   const RoleIcon = roleStyle.icon;
-
-  /**
-   * ---------------------------------------------------------
-   * User Display
-   * ---------------------------------------------------------
-   */
   const displayName = user?.first_name || 'Account';
 
-  /**
-   * ---------------------------------------------------------
-   * Logout
-   * ---------------------------------------------------------
-   */
   const handleLogout = async () => {
-    if (isLoggingOut) {
-      return;
-    }
-
+    if (isLoggingOut) return;
     setIsLoggingOut(true);
-
     try {
       await logout();
-
-      navigate('/login', {
-        replace: true,
-      });
+      navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout failed:', error);
-
       setIsLoggingOut(false);
     }
   };
@@ -185,84 +85,33 @@ export const SideNav: React.FC = () => {
       {/* =====================================================
           TOP SECTION
       ====================================================== */}
-
-      <div
-        className="
-        min-h-0
-        overflow-y-auto
-      "
-      >
-        {/* ---------------------------------------------------
-            APP LOGO
-        ---------------------------------------------------- */}
-
-        <div
-          className="
-          flex items-center gap-3
-          border-b border-slate-800
-          p-1
-        "
-        >
-          <div
-            className="
-            flex h-9 w-9
-            items-center justify-center
-            rounded-lg
-            bg-cyan-500/10
-            text-cyan-400
-          "
-          >
-            <Zap size={20} />
+      <div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-800">
+        {/* APP LOGO */}
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-800 bg-slate-950 p-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
+            <Zap size={18} />
           </div>
-
           <div>
-            <span
-              className="
-              font-bold
-              tracking-wide
-              text-white
-            "
-            >
+            <span className="font-bold tracking-wide text-white text-sm">
               SWIFTBUY
             </span>
-
-            <p
-              className="
-              text-[11px]
-              text-slate-500
-            "
-            >
-              Inventory
-            </p>
+            <p className="text-[10px] text-slate-500">Inventory System</p>
           </div>
         </div>
 
-        {/* ---------------------------------------------------
-            NAVIGATION
-        ---------------------------------------------------- */}
-
-        <nav aria-label="Sidebar" className="space-y-5 p-3">
+        {/* NAVIGATION SECTIONS */}
+        <nav aria-label="Sidebar" className="space-y-3.5 p-2.5">
           {visibleSections.map((section) => (
             <div key={section.label}>
               {/* Section heading */}
-
-              <div className="mb-2 px-3">
-                <p
-                  className="
-                    text-[10px]
-                    font-semibold
-                    uppercase
-                    tracking-wider
-                    text-slate-600
-                  "
-                >
+              <div className="mb-1 px-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
                   {section.label}
                 </p>
               </div>
 
               {/* Navigation items */}
-
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {section.items.map((item) => {
                   const Icon = item.icon;
 
@@ -272,54 +121,26 @@ export const SideNav: React.FC = () => {
                       to={item.to}
                       className={({ isActive }) =>
                         [
-                          'flex items-center',
-                          'justify-between',
-                          'rounded-lg',
-                          'px-3 py-2.5',
-                          'text-sm font-medium',
-                          'transition-all',
-                          'focus:outline-none',
-                          'focus:ring-2',
-                          'focus:ring-cyan-500',
+                          'flex items-center justify-between',
+                          'rounded-md',
+                          'px-2.5 py-1.5',
+                          'text-xs font-medium',
+                          'transition-all duration-150',
+                          'focus:outline-none focus:ring-1 focus:ring-cyan-500',
 
                           isActive
-                            ? [
-                                'border',
-                                'border-cyan-500/30',
-                                'bg-cyan-950/50',
-                                'text-cyan-400',
-                              ].join(' ')
-                            : [
-                                'text-slate-400',
-                                'hover:bg-slate-900',
-                                'hover:text-slate-200',
-                              ].join(' '),
+                            ? 'border border-cyan-500/30 bg-cyan-950/40 text-cyan-400'
+                            : 'text-slate-400 hover:bg-slate-900/80 hover:text-slate-200',
                         ].join(' ')
                       }
                     >
-                      <div
-                        className="
-                            flex items-center gap-3
-                          "
-                      >
-                        <Icon size={18} />
-
-                        <span>{item.label}</span>
+                      <div className="flex items-center gap-2.5">
+                        <Icon size={16} className="shrink-0" />
+                        <span className="truncate">{item.label}</span>
                       </div>
 
                       {item.badge !== undefined && (
-                        <span
-                          className="
-                              rounded-full
-                              border
-                              border-cyan-500/20
-                              bg-cyan-500/10
-                              px-2 py-0.5
-                              text-[10px]
-                              font-bold
-                              text-cyan-400
-                            "
-                        >
+                        <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-1.5 py-0.2 text-[9px] font-bold text-cyan-400">
                           {item.badge}
                         </span>
                       )}
@@ -335,147 +156,64 @@ export const SideNav: React.FC = () => {
       {/* =====================================================
           BOTTOM SECTION
       ====================================================== */}
-
-      <div
-        className="
-        space-y-2
-        border-t
-        border-slate-800
-        p-3
-      "
-      >
-        {/* ---------------------------------------------------
-            PROFILE
-        ---------------------------------------------------- */}
-
+      <div className="space-y-1.5 border-t border-slate-800 p-2.5 bg-slate-950 shrink-0">
+        {/* PROFILE LINK */}
         <NavLink
           to="/settings/profile"
           aria-label="View user profile"
           className={({ isActive }) =>
             [
-              'group flex items-center',
-              'justify-between',
+              'group flex items-center justify-between',
               'rounded-lg border',
-              'p-2.5',
+              'p-2',
               'transition-all',
-              'focus:outline-none',
-              'focus:ring-2',
-              'focus:ring-cyan-500',
+              'focus:outline-none focus:ring-1 focus:ring-cyan-500',
 
               isActive
-                ? ['border-cyan-500/50', 'bg-cyan-950/40', 'text-white'].join(
-                    ' ',
-                  )
-                : [
-                    'border-slate-800',
-                    'bg-slate-900/40',
-                    'text-slate-300',
-                    'hover:border-slate-700',
-                    'hover:bg-slate-900',
-                  ].join(' '),
+                ? 'border-cyan-500/50 bg-cyan-950/40 text-white'
+                : 'border-slate-800/80 bg-slate-900/30 text-slate-300 hover:border-slate-700 hover:bg-slate-900',
             ].join(' ')
           }
         >
-          <div
-            className="
-            flex items-center
-            gap-3
-            overflow-hidden
-          "
-          >
-            {/* Role icon */}
-
-            <div
-              className="
-              flex h-8 w-8
-              shrink-0
-              items-center
-              justify-center
-              rounded-md
-              border
-              border-slate-800
-              bg-slate-900
-              text-cyan-400
-            "
-            >
-              <RoleIcon size={16} />
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-800 bg-slate-900 text-cyan-400">
+              <RoleIcon size={14} />
             </div>
 
-            {/* User details */}
-
             <div className="overflow-hidden">
-              <p
-                className="
-                truncate
-                text-xs
-                font-semibold
-                text-slate-200
-                group-hover:text-white
-              "
-              >
+              <p className="truncate text-xs font-semibold text-slate-200 group-hover:text-white">
                 {displayName}
               </p>
-
-              <p
-                className="
-                truncate
-                text-[10px]
-                text-slate-500
-              "
-              >
+              <p className="truncate text-[10px] text-slate-500">
                 {roleStyle.label}
               </p>
             </div>
           </div>
 
           <ChevronRight
-            size={16}
-            className="
-              shrink-0
-              text-slate-600
-              transition-transform
-              duration-200
-              group-hover:translate-x-1
-              group-hover:text-cyan-400
-            "
+            size={14}
+            className="shrink-0 text-slate-600 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-cyan-400"
           />
         </NavLink>
 
-        {/* ---------------------------------------------------
-            SIGN OUT
-        ---------------------------------------------------- */}
-
+        {/* SIGN OUT BUTTON */}
         <button
           type="button"
           onClick={handleLogout}
           disabled={isLoggingOut}
           className="
-            flex w-full
-            cursor-pointer
-            items-center
-            justify-center
-            gap-2
-            rounded-lg
-            border
-            border-red-500/20
-            bg-red-950/10
-            px-3 py-2
-            text-xs
-            font-medium
-            text-red-400
-            transition-colors
-            hover:bg-red-900/30
-            hover:text-red-200
-            disabled:cursor-not-allowed
-            disabled:opacity-50
+            flex w-full cursor-pointer items-center justify-center gap-2
+            rounded-lg border border-red-500/20 bg-red-950/10
+            px-2.5 py-1.5 text-xs font-medium text-red-400
+            transition-colors hover:bg-red-900/30 hover:text-red-200
+            disabled:cursor-not-allowed disabled:opacity-50
           "
         >
           {isLoggingOut ? (
-            <Loader2 size={14} className="animate-spin" />
+            <Loader2 size={13} className="animate-spin" />
           ) : (
-            <LogOut size={14} />
+            <LogOut size={13} />
           )}
-
           <span>{isLoggingOut ? 'Signing out...' : 'Sign out'}</span>
         </button>
       </div>

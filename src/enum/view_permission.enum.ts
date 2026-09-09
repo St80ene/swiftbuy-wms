@@ -8,4 +8,8 @@ export enum ViewPermission {
   USERS_VIEW = 'users.view',
   BUSINESS_VIEW = 'business.view',
   PROFILE_VIEW = 'profile.view',
+  REPORTS_VIEW = 'REPORTS_VIEW',
+  STOCKS_VIEW = 'STOCKS_VIEW',
+  STORES_VIEW = 'STORES_VIEW',
+  AUDIT_LOGS_VIEW = 'AUDIT_LOGS_VIEW',
 }
