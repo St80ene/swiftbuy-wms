@@ -2,13 +2,14 @@ import type { ApiResponse, BasePaginationParams } from '@/interfaces';
 
 import apiClient from './api';
 import type { ICategory } from '@/interfaces/category.interface';
+import type { CategoriesResponse } from '@/types';
 
 const CATEGORIES_RESOURCE = '/categories';
 
 export const categoryService = {
   getAllCategories: async (
     params: BasePaginationParams = {},
-  ): Promise<ApiResponse<ICategory[]>> => {
+  ): Promise<CategoriesResponse> => {
     const response = await apiClient.get(CATEGORIES_RESOURCE, {
       params: {
         page: params.page ?? 1,

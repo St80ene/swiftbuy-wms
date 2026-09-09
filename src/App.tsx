@@ -9,6 +9,7 @@ import { ProtectedRoute } from './components/Auth/ProtectedRoute';
 import Login from './components/Auth/Login';
 import { UserProfilePage } from './components/Settings/UserProfilePage';
 import { BusinessSettingsPage } from './components/Settings/BusinessSettingsPage';
+import CategoriesPage from './components/Categories';
 
 export default function App() {
   return (
@@ -33,10 +34,16 @@ export default function App() {
             />
 
             {/* Products */}
-            <Route path="/products" element={<Products />} />
 
+            {/*Products display */}
+            <Route path="/products" element={<Products />} />
             {/* Product details */}
             <Route path="/products/:productId" element={<ProductDetails />} />
+
+            {/*Categories */}
+            <Route path="/categories" element={<CategoriesPage />} />
+            {/* Category details */}
+            {/* <Route path="/categories/:categoryId" element={<ProductDetails />} /> */}
 
             {/* Default */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
