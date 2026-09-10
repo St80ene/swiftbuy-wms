@@ -114,7 +114,6 @@ const ProductTable = ({
       cellClassName: 'font-mono text-slate-500 text-xs whitespace-nowrap',
       render: (product) => formatCurrency(Number(product.cost_price)),
     },
-
     {
       key: 'sellingPrice',
       header: 'Selling Price',
@@ -122,7 +121,24 @@ const ProductTable = ({
         'font-mono font-semibold text-emerald-600 text-xs whitespace-nowrap',
       render: (product) => formatCurrency(Number(product.selling_price)),
     },
-
+    {
+      key: 'category',
+      header: 'Category',
+      cellClassName:
+        'font-mono font-semibold text-emerald-600 text-xs whitespace-nowrap',
+      render: (product) => {
+        console.log('product.category', product.category);
+        return product.category ? (
+          <span className="font-mono text-slate-500 text-xs whitespace-nowrap">
+            {product.category.name}
+          </span>
+        ) : (
+          <span className="font-mono text-slate-400 text-xs whitespace-nowrap">
+            N/A
+          </span>
+        );
+      },
+    },
     {
       key: 'actions',
       header: '',

@@ -46,8 +46,10 @@ export interface Product {
   uom_display_name: UomDisplayName;
   createdAt: Date;
   updatedAt: Date;
+  category_id: string;
+  business_id: string;
   status: ProductStatus;
-  category?: string;
+  category?: ICategory;
   description?: string;
   suppliers?: Supplier[];
   purchase_orders?: PurchaseOrder[];
