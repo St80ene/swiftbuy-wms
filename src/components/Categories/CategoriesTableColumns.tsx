@@ -88,7 +88,7 @@ export const getCategoryColumns = ({
           type="button"
           onClick={() => onEdit(category)}
           aria-label={`Edit ${category.name} category`}
-          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+          className="p-1.5 cursor-pointer text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
         >
           <Edit2 className="w-4 h-4" />
         </button>
@@ -96,7 +96,7 @@ export const getCategoryColumns = ({
           type="button"
           onClick={() => onDelete(category)}
           aria-label={`Delete ${category.name} category`}
-          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+          className="p-1.5 cursor-pointer text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
         >
           <Trash2 className="w-4 h-4" />
         </button>

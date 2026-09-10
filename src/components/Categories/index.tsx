@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-
 import {
   Plus,
   Search,
@@ -7,46 +6,104 @@ import {
   FolderTree,
   Package,
   Layers,
-  X,
   Filter,
 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 
+import { CategoryFormModal } from './modals/CategoryFormModal';
 import { getCategoryColumns } from './CategoriesTableColumns';
+import DataTable from '../common/DataTable';
+import { LoadingScreen } from '../common/Error/LoadingScreen';
+import { ErrorPage } from '../common/Error/ErrorPage';
+
+import { categoryService } from '@/services/categories';
+import useDebouncedValue from '@/hooks/debounceHook';
 import type {
+  CategoryFormData,
   ICategory,
   CategorySortField,
 } from '@/interfaces/category.interface';
-import DataTable from '../common/DataTable';
-import useDebouncedValue from '@/hooks/debounceHook';
-import { categoryService } from '@/services/categories';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CategoriesResponse } from '@/types';
-import { LoadingScreen } from '../common/Error/LoadingScreen';
-import { ErrorPage } from '../common/Error/ErrorPage';
-import { useNavigate } from 'react-router-dom';
+import { DeleteConfirmModal } from './modals/DeleteConfirmModal';
 
 export const CategoriesPage = () => {
   const queryClient = useQueryClient();
-
   const navigate = useNavigate();
 
+  // Pagination state
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(7);
 
-  // Local state
+  // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSort, setSelectedSort] = useState<CategorySortField>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [categoryToDelete, setCategoryToDelete] = useState<ICategory | null>(
+    null,
+  );
 
   const debouncedSearch = useDebouncedValue(searchQuery.trim(), 350);
 
-  // Category Modal State
+  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ICategory | null>(
     null,
   );
 
-  // Handlers
+  // Queries
+  const { data, isLoading, isError, error, isPlaceholderData, refetch } =
+    useQuery<CategoriesResponse>({
+      queryKey: [
+        'categories',
+        {
+          page,
+          limit,
+          search: debouncedSearch,
+          sortBy: selectedSort,
+          sortOrder,
+        },
+      ],
+      queryFn: () =>
+        categoryService.getAllCategories({
+          page,
+          limit,
+          search: debouncedSearch,
+          sortBy: selectedSort,
+          sortOrder,
+        }),
+      placeholderData: (previousData) => previousData,
+    });
+
+  // Create Mutation
+  const createMutation = useMutation({
+    mutationFn: (payload: CategoryFormData) =>
+      categoryService.createCategory(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setIsModalOpen(false);
+    },
+  });
+
+  // Update Mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: CategoryFormData }) =>
+      categoryService.updateCategory(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setIsModalOpen(false);
+    },
+  });
+
+  // Delete Mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => categoryService.removeCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    },
+  });
+
+  // Action Handlers
   const handleOpenCreateModal = () => {
     setSelectedCategory(null);
     setIsModalOpen(true);
@@ -55,6 +112,27 @@ export const CategoriesPage = () => {
   const handleOpenEditModal = (category: ICategory) => {
     setSelectedCategory(category);
     setIsModalOpen(true);
+  };
+
+  const handleDeleteCategory = (category: ICategory) => {
+    setCategoryToDelete(category);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!categoryToDelete) return;
+    await deleteMutation.mutateAsync(categoryToDelete.id);
+    setCategoryToDelete(null);
+  };
+
+  const handleFormSubmit = async (formData: CategoryFormData) => {
+    if (selectedCategory) {
+      await updateMutation.mutateAsync({
+        id: selectedCategory.id,
+        payload: formData,
+      });
+    } else {
+      await createMutation.mutateAsync(formData);
+    }
   };
 
   const handlePageChange = (newPage: number) => {
@@ -70,53 +148,36 @@ export const CategoriesPage = () => {
     setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
   };
 
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    // isFetching,
-    isPlaceholderData,
-    refetch,
-  } = useQuery<CategoriesResponse>({
-    queryKey: ['categories', { page, limit, search: debouncedSearch }],
-    queryFn: () =>
-      categoryService.getAllCategories({
-        page,
-        limit,
-        sortBy: 'created_at',
-        search: debouncedSearch,
-      }),
-    placeholderData: (previousData) => previousData,
-  });
-
-  const handleDeleteCategory = (category: ICategory) => {
-    if (confirm(`Are you sure you want to delete "${category.name}"?`)) {
-      queryClient.invalidateQueries({
-        queryKey: ['categories'],
-        exact: true,
-      });
-    }
-  };
-
-  // Metrics summary
+  // Metrics computation
   const totalProductsCount = useMemo(() => {
-    return data?.meta?.totalItems ?? 0;
-  }, [data?.meta?.totalItems]);
+    return (
+      data?.categories?.reduce(
+        (acc, category) => acc + (category.products?.length ?? 0),
+        0,
+      ) ?? 0
+    );
+  }, [data?.categories]);
 
-  // 1. Loading state (triggers on initial mount when no cached/placeholder data exists)
+  const avgProductsPerCategory = useMemo(() => {
+    return Math.round(
+      totalProductsCount / (data?.categories?.length ?? 0) || 0,
+    );
+  }, [totalProductsCount, data?.categories]);
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
   if (isLoading) {
-    return <LoadingScreen label="Fetching product catalogue..." />;
+    return <LoadingScreen label="Fetching inventory categories..." />;
   }
 
   if (isError) {
     return (
       <ErrorPage
-        title="Failed to load products"
+        title="Failed to load categories"
         message={
           error instanceof Error
             ? error.message
-            : 'An error occurred while fetching the product list. Please check your network connection.'
+            : 'An error occurred while loading category records.'
         }
         onRetry={() => refetch()}
         onNavigateHome={() => navigate('/dashboard')}
@@ -126,14 +187,14 @@ export const CategoriesPage = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 min-h-screen bg-slate-50/50">
-      {/* 1. Header & Primary CTA */}
+      {/* Header & Primary CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Inventory Categories
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Organize products, assign attributes, and track inventory
+            Organize products, manage catalog hierarchies, and track product
             distribution.
           </p>
         </div>
@@ -143,12 +204,10 @@ export const CategoriesPage = () => {
           onClick={handleOpenCreateModal}
           className="
             inline-flex items-center justify-center gap-2
-            px-4 py-2.5
-            text-sm font-semibold text-white
-            bg-slate-900 hover:bg-slate-800
-            rounded-lg shadow-sm
-            transition-colors duration-150
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2
+            px-4 py-2.5 text-sm font-semibold text-white
+            bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs
+            transition-colors duration-150 focus-visible:outline-none
+            focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2
             cursor-pointer shrink-0
           "
         >
@@ -157,7 +216,7 @@ export const CategoriesPage = () => {
         </button>
       </div>
 
-      {/* 2. Overview Metrics Cards */}
+      {/* Overview Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 bg-white border border-slate-200/80 rounded-xl shadow-2xs flex items-center gap-4">
           <div className="p-3 bg-slate-100 rounded-lg text-slate-700">
@@ -168,7 +227,7 @@ export const CategoriesPage = () => {
               Total Categories
             </p>
             <p className="text-xl font-bold text-slate-900 mt-0.5">
-              {data?.categories.length || 0}
+              {data?.meta?.totalItems ?? data?.categories?.length ?? 0}
             </p>
           </div>
         </div>
@@ -179,7 +238,7 @@ export const CategoriesPage = () => {
           </div>
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Total Products Linked
+              Total Linked Products
             </p>
             <p className="text-xl font-bold text-slate-900 mt-0.5">
               {totalProductsCount}
@@ -196,13 +255,13 @@ export const CategoriesPage = () => {
               Avg Products / Category
             </p>
             <p className="text-xl font-bold text-slate-900 mt-0.5">
-              {totalProductsCount}
+              {avgProductsPerCategory}
             </p>
           </div>
         </div>
       </div>
 
-      {/* 3. Table Wrapper with Custom Header Filter Toolbar */}
+      {/* Main Data Table */}
       <DataTable<ICategory>
         records={data?.categories || []}
         columns={getCategoryColumns({
@@ -216,14 +275,13 @@ export const CategoriesPage = () => {
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         emptyState={{
-          icon: <FolderTree className="w-7 h-7" />,
+          icon: <FolderTree className="w-7 h-7 text-slate-400" />,
           title: 'No categories found',
           description:
-            'Get started by creating a new category for your inventory items.',
+            'Get started by creating a new category for your inventory catalog.',
         }}
         header={
           <div className="p-4 border-b border-slate-200/60 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
-            {/* Search Input */}
             <div className="relative w-full sm:w-80">
               <label htmlFor="category-search" className="sr-only">
                 Search Categories
@@ -234,20 +292,19 @@ export const CategoriesPage = () => {
                 type="search"
                 placeholder="Search categories..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
                 className="
-                  w-full pl-9 pr-3 py-1.5
-                  text-xs font-normal text-slate-800
-                  placeholder:text-slate-400
-                  bg-slate-50/50 border border-slate-200
-                  rounded-lg outline-none
-                  focus:bg-white focus:ring-2 focus:ring-slate-300 focus:border-slate-300
-                  transition-all
+                  w-full pl-9 pr-3 py-1.5 text-xs font-normal text-slate-800
+                  placeholder:text-slate-400 bg-slate-50/50 border border-slate-200
+                  rounded-lg outline-none focus:bg-white focus:ring-2
+                  focus:ring-slate-300 focus:border-slate-300 transition-all
                 "
               />
             </div>
 
-            {/* Sorting & Filters */}
             <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               <div className="flex items-center gap-1.5 bg-slate-50/50 border border-slate-200 rounded-lg p-1">
                 <span className="text-xs text-slate-500 pl-2 font-medium flex items-center gap-1">
@@ -262,14 +319,14 @@ export const CategoriesPage = () => {
                   className="bg-transparent text-xs text-slate-700 font-medium outline-none cursor-pointer pr-1"
                 >
                   <option value="name">Name</option>
-                  <option value="createdAt">Date Created</option>
-                  <option value="updatedAt">Date Updated</option>
+                  <option value="created_at">Date Created</option>
+                  <option value="updated_at">Date Updated</option>
                 </select>
                 <button
                   type="button"
                   onClick={toggleSortOrder}
                   aria-label={`Sort direction ${sortOrder}`}
-                  className="p-1 hover:bg-slate-200/60 rounded text-slate-600 transition-colors"
+                  className="p-1 hover:bg-slate-200/60 rounded text-slate-600 transition-colors cursor-pointer"
                 >
                   <ArrowUpDown className="w-3.5 h-3.5" />
                 </button>
@@ -279,90 +336,26 @@ export const CategoriesPage = () => {
         }
       />
 
-      {/* 4. Add/Edit Dialog Modal */}
+      {/* Conditionally rendered modal resetting state via key */}
       {isModalOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-title"
-        >
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <h2
-                id="modal-title"
-                className="text-base font-semibold text-slate-800"
-              >
-                {selectedCategory ? 'Edit Category' : 'Create Category'}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-md transition-colors"
-                aria-label="Close modal"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+        <CategoryFormModal
+          key={selectedCategory?.id || 'new-category'}
+          category={selectedCategory}
+          isSubmitting={isSubmitting}
+          setIsModalOpen={setIsModalOpen}
+          onSubmit={handleFormSubmit}
+        />
+      )}
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                setIsModalOpen(false);
-              }}
-              className="p-5 space-y-4"
-            >
-              <div>
-                <label
-                  htmlFor="cat-name"
-                  className="block text-xs font-semibold text-slate-700 mb-1"
-                >
-                  Category Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="cat-name"
-                  type="text"
-                  required
-                  defaultValue={selectedCategory?.name || ''}
-                  placeholder="e.g. Hardware & Machinery"
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-300"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="cat-desc"
-                  className="block text-xs font-semibold text-slate-700 mb-1"
-                >
-                  Description
-                </label>
-                <textarea
-                  id="cat-desc"
-                  rows={3}
-                  defaultValue={selectedCategory?.description || ''}
-                  placeholder="Optional context about what belongs in this category..."
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-300 resize-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-2 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-3.5 py-2 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors"
-                >
-                  {selectedCategory ? 'Save Changes' : 'Create Category'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {categoryToDelete && (
+        <DeleteConfirmModal
+          title="Delete Category"
+          itemName={categoryToDelete.name}
+          warningText="Products assigned to this category will be unlinked."
+          isDeleting={deleteMutation.isPending}
+          onClose={() => setCategoryToDelete(null)}
+          onConfirm={handleConfirmDelete}
+        />
       )}
     </div>
   );
