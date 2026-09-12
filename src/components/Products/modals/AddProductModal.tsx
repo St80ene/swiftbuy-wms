@@ -8,23 +8,31 @@ import React, {
   type SubmitEvent,
 } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { UomType, UomBaseName, UomDisplayName } from '../../../enum/product';
-import BaseModal from '../../common/BaseModal';
+
+import { UomBaseName, UomDisplayName, UomType } from '@/enum/product';
+import BaseModal from '@/components/common/BaseModal';
 import { categoryService } from '@/services/categories';
 import type { ICategory } from '@/interfaces/category.interface';
 
+const MAX_IMAGES = 5;
+
 const UOM_CONFIG: Record<
   UomType,
-  { defaultBase: UomBaseName; allowedDisplay: UomDisplayName[] }
+  {
+    defaultBase: UomBaseName;
+    allowedDisplay: UomDisplayName[];
+  }
 > = {
   [UomType.UNIT]: {
     defaultBase: UomBaseName.PCS,
     allowedDisplay: [UomDisplayName.PCS],
   },
+
   [UomType.WEIGHT]: {
     defaultBase: UomBaseName.G,
     allowedDisplay: [UomDisplayName.G, UomDisplayName.KG],
   },
+
   [UomType.VOLUME]: {
     defaultBase: UomBaseName.ML,
     allowedDisplay: [UomDisplayName.ML, UomDisplayName.L],
@@ -35,7 +43,6 @@ export interface CreateProductFormData {
   name: string;
   description: string;
   category_id: string;
-  reorder_level: string;
   cost_price: string;
   selling_price: string;
   uom_type: UomType;
@@ -50,8 +57,6 @@ interface AddProductModalProps {
   onSubmit: (formData: FormData) => void | Promise<void>;
 }
 
-const MAX_IMAGES = 5;
-
 export default function AddProductModal({
   isSubmitting,
   setIsModalOpen,
@@ -59,10 +64,13 @@ export default function AddProductModal({
 }: AddProductModalProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Fetch available categories
   const { data: categoriesData, isLoading: isLoadingCategories } = useQuery({
     queryKey: ['categories-list'],
-    queryFn: () => categoryService.getAllCategories({ page: 1, limit: 100 }),
+    queryFn: () =>
+      categoryService.getAllCategories({
+        page: 1,
+        limit: 100,
+      }),
   });
 
   const categories = categoriesData?.categories || [];
@@ -71,7 +79,6 @@ export default function AddProductModal({
     name: '',
     description: '',
     category_id: '',
-    reorder_level: '5',
     cost_price: '0.00',
     selling_price: '0.00',
     uom_type: UomType.UNIT,
@@ -80,7 +87,7 @@ export default function AddProductModal({
     images: [],
   });
 
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const previews = useMemo(() => {
@@ -94,11 +101,11 @@ export default function AddProductModal({
   }, [previews]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<
+    event: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >,
   ) => {
-    const { name, value } = e.target;
+    const { name, value } = event.target;
 
     if (name === 'uom_type') {
       const newUomType = value as UomType;
@@ -111,18 +118,24 @@ export default function AddProductModal({
         uom_display_name: config.allowedDisplay[0],
       }));
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
     }
 
     if (fieldErrors[name]) {
-      setFieldErrors((prev) => ({ ...prev, [name]: '' }));
+      setFieldErrors((prev) => ({
+        ...prev,
+        [name]: '',
+      }));
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files) return;
 
-    const selectedFiles = Array.from(e.target.files);
+    const selectedFiles = Array.from(event.target.files);
     const availableSlots = MAX_IMAGES - formData.images.length;
 
     if (availableSlots <= 0) return;
@@ -142,7 +155,7 @@ export default function AddProductModal({
   const removeImage = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, indx) => indx !== index),
+      images: prev.images.filter((_, imageIndex) => imageIndex !== index),
     }));
   };
 
@@ -152,9 +165,16 @@ export default function AddProductModal({
 
     const errors: Record<string, string> = {};
 
-    if (!formData.name.trim()) errors.name = 'Product name is required';
+    if (!formData.name.trim()) {
+      errors.name = 'Product name is required';
+    }
+
     if (!formData.selling_price || Number(formData.selling_price) <= 0) {
       errors.selling_price = 'Valid selling price required';
+    }
+
+    if (formData.cost_price && Number(formData.cost_price) < 0) {
+      errors.cost_price = 'Cost price cannot be negative';
     }
 
     if (Object.keys(errors).length > 0) {
@@ -163,18 +183,25 @@ export default function AddProductModal({
     }
 
     const submitPayload = new FormData();
+
     submitPayload.append('name', formData.name.trim());
+
     if (formData.description.trim()) {
       submitPayload.append('description', formData.description.trim());
     }
+
     if (formData.category_id) {
       submitPayload.append('category_id', formData.category_id);
     }
-    submitPayload.append('reorder_level', formData.reorder_level);
+
     submitPayload.append('cost_price', formData.cost_price);
+
     submitPayload.append('selling_price', formData.selling_price);
+
     submitPayload.append('uom_type', formData.uom_type);
+
     submitPayload.append('uom_base_name', formData.uom_base_name);
+
     submitPayload.append('uom_display_name', formData.uom_display_name);
 
     formData.images.forEach((file) => {
@@ -186,8 +213,8 @@ export default function AddProductModal({
 
   return (
     <BaseModal
-      title="Add Product to Shelves"
-      subtitle="Register a new commercial SKU."
+      title="Add Product"
+      subtitle="Register a new product for your business."
       error={error}
       isSubmitting={isSubmitting}
       submitLabel="Create Product"
@@ -195,12 +222,13 @@ export default function AddProductModal({
       onClose={() => setIsModalOpen(false)}
       onSubmit={handleSubmit}
     >
-      {/* Product Name & Category Group */}
+      {/* Product Name & Category */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Product Name <span className="text-rose-500">*</span>
           </label>
+
           <input
             type="text"
             name="name"
@@ -214,6 +242,7 @@ export default function AddProductModal({
                 : 'border-slate-200 focus:border-blue-500 focus:bg-white'
             }`}
           />
+
           {fieldErrors.name && (
             <p className="text-[11px] text-rose-600 mt-1 font-medium">
               {fieldErrors.name}
@@ -221,12 +250,12 @@ export default function AddProductModal({
           )}
         </div>
 
-        {/* Category Select */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Category{' '}
             <span className="text-slate-400 font-normal">(Optional)</span>
           </label>
+
           <select
             name="category_id"
             value={formData.category_id}
@@ -235,9 +264,10 @@ export default function AddProductModal({
             className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all cursor-pointer disabled:opacity-50"
           >
             <option value="">Select a Category...</option>
-            {categories.map((cat: ICategory) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
+
+            {categories.map((category: ICategory) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
               </option>
             ))}
           </select>
@@ -250,6 +280,7 @@ export default function AddProductModal({
           Description{' '}
           <span className="text-slate-400 font-normal">(Optional)</span>
         </label>
+
         <textarea
           name="description"
           rows={2}
@@ -266,6 +297,7 @@ export default function AddProductModal({
           <label className="block text-xs font-semibold text-slate-700">
             Product Images
           </label>
+
           <span className="text-[10px] text-slate-400">
             {formData.images.length}/{MAX_IMAGES}
           </span>
@@ -288,15 +320,16 @@ export default function AddProductModal({
           className="w-full border-2 border-dashed border-slate-200 rounded-lg px-4 py-5 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           <div className="text-xl mb-1">📷</div>
+
           <p className="text-xs font-medium text-slate-700">
             Click to upload images
           </p>
+
           <p className="text-[10px] text-slate-400 mt-1">
             JPG, PNG or WebP · Max 5MB each
           </p>
         </button>
 
-        {/* Image Previews Grid */}
         {previews.length > 0 && (
           <div className="grid grid-cols-5 gap-2 mt-3">
             {previews.map((preview, index) => (
@@ -309,6 +342,7 @@ export default function AddProductModal({
                   alt={`Product preview ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
+
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
@@ -323,21 +357,24 @@ export default function AddProductModal({
         )}
       </div>
 
-      {/* Unit of Measure Group */}
+      {/* Unit of Measure */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
         <div>
           <label className="block text-[11px] font-semibold text-slate-700 mb-1">
             UOM Type
           </label>
+
           <select
             name="uom_type"
             value={formData.uom_type}
             onChange={handleInputChange}
-            disabled={true}
+            disabled={isSubmitting}
             className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 transition-all cursor-pointer"
           >
             <option value={UomType.UNIT}>UNIT</option>
+
             <option value={UomType.WEIGHT}>WEIGHT</option>
+
             <option value={UomType.VOLUME}>VOLUME</option>
           </select>
         </div>
@@ -346,6 +383,7 @@ export default function AddProductModal({
           <label className="block text-[11px] font-semibold text-slate-700 mb-1">
             Base Unit
           </label>
+
           <input
             type="text"
             readOnly
@@ -358,8 +396,8 @@ export default function AddProductModal({
           <label className="block text-[11px] font-semibold text-slate-700 mb-1">
             Display Unit
           </label>
+
           <input
-            name="uom_display_name"
             type="text"
             readOnly
             value={formData.uom_display_name.toLocaleUpperCase()}
@@ -368,27 +406,13 @@ export default function AddProductModal({
         </div>
       </div>
 
-      {/* Stock & Cost */}
+      {/* Cost & Selling Price */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Reorder Level ({formData.uom_base_name})
+            Cost Price (₦)
           </label>
-          <input
-            type="number"
-            name="reorder_level"
-            min="0"
-            step={formData.uom_type === UomType.UNIT ? '1' : 'any'}
-            value={formData.reorder_level}
-            onChange={handleInputChange}
-            placeholder="5"
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Cost Price ($)
-          </label>
+
           <input
             type="number"
             name="cost_price"
@@ -397,17 +421,25 @@ export default function AddProductModal({
             value={formData.cost_price}
             onChange={handleInputChange}
             placeholder="0.00"
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all"
+            className={`w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden transition-all ${
+              fieldErrors.cost_price
+                ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
+                : 'border-slate-200 focus:border-blue-500 focus:bg-white'
+            }`}
           />
-        </div>
-      </div>
 
-      {/* Pricing */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {fieldErrors.cost_price && (
+            <p className="text-[11px] text-rose-600 mt-1 font-medium">
+              {fieldErrors.cost_price}
+            </p>
+          )}
+        </div>
+
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Retail Price ($) <span className="text-rose-500">*</span>
+            Selling Price (₦) <span className="text-rose-500">*</span>
           </label>
+
           <input
             type="number"
             name="selling_price"
@@ -422,6 +454,7 @@ export default function AddProductModal({
                 : 'border-slate-200 focus:border-blue-500 focus:bg-white'
             }`}
           />
+
           {fieldErrors.selling_price && (
             <p className="text-[11px] text-rose-600 mt-1 font-medium">
               {fieldErrors.selling_price}

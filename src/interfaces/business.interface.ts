@@ -24,7 +24,6 @@ export interface IBusiness {
   // Identity
   legal_name: string;
   display_name: string;
-  slug: string;
   registration_number?: string | null;
   tax_identification_number?: string | null;
   business_type?: string | null;
@@ -51,9 +50,6 @@ export interface IBusiness {
   locale: string;
   tax_settings?: Record<string, unknown> | null;
   settings?: BusinessSettings | null;
-
-  // Lifecycle
-  status: BusinessStatus;
 
   // Relationships
   categories?: ICategory[];

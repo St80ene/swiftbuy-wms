@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   LayoutDashboard,
   AlertTriangle,
@@ -7,9 +7,6 @@ import {
   TrendingDown,
   ArrowUpRight,
 } from 'lucide-react';
-import type { PaginationMeta } from '@/interfaces';
-import type { DataTableColumn } from '@/interfaces/data_table';
-import DataTable from './common/DataTable';
 export interface DashboardProduct {
   id: string;
   name: string;
@@ -102,76 +99,9 @@ const mockPurchaseOrders: DashboardPurchaseOrder[] = [
 ];
 
 export const Dashboard: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
-
-  const lowStockItems = mockProducts.filter(
-    (product) =>
-      product.is_low_stock || product.stock_quantity <= product.reorder_level,
-  );
-
   const openPurchaseOrders = mockPurchaseOrders.filter(
     (order) => order.status !== 'RECEIVED' && order.status !== 'CANCELLED',
   );
-
-  const paginationMeta: PaginationMeta = {
-    currentPage,
-    itemCount: lowStockItems.length,
-    itemsPerPage: pageSize,
-    totalItems: lowStockItems.length,
-    totalPages: Math.ceil(lowStockItems.length / pageSize) || 1,
-    hasPreviousPage: currentPage > 1,
-    hasNextPage: currentPage * pageSize < lowStockItems.length,
-  };
-
-  const columns: DataTableColumn<DashboardProduct>[] = [
-    {
-      key: 'name',
-      header: 'Product / SKU',
-      render: (product) => (
-        <div>
-          <span className="font-semibold text-slate-900 block">
-            {product.name}
-          </span>
-          <span className="text-[10px] text-slate-400 font-mono">
-            {product.sku} • {product.category}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: 'stock_quantity',
-      header: 'Current Level',
-      render: (product) => (
-        <span
-          className={`font-bold ${
-            product.stock_quantity === 0 ? 'text-rose-600' : 'text-amber-600'
-          }`}
-        >
-          {product.stock_quantity.toLocaleString()} {product.uom_display_name}
-        </span>
-      ),
-    },
-    {
-      key: 'reorder_level',
-      header: 'Reorder Point',
-      render: (product) => (
-        <span className="text-slate-500 font-mono text-xs">
-          {product.reorder_level} {product.uom_display_name}
-        </span>
-      ),
-    },
-    {
-      key: 'affected_stores',
-      header: 'Chain Impact',
-      render: (product) => (
-        <span className="inline-flex items-center gap-1 rounded bg-rose-50 border border-rose-200 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
-          <AlertTriangle size={11} />
-          {product.affected_stores_count} stores low
-        </span>
-      ),
-    },
-  ];
 
   return (
     <div className="space-y-6 p-6 animate-[fadeIn_0.2s_ease-out]">
@@ -212,9 +142,7 @@ export const Dashboard: React.FC = () => {
             </span>
             <TrendingDown size={18} className="text-rose-600" />
           </div>
-          <p className="text-3xl font-bold text-rose-600">
-            {lowStockItems.length}
-          </p>
+          <p className="text-3xl font-bold text-rose-600">{10}</p>
           <div className="flex items-center gap-1 text-[11px] text-rose-600 font-medium mt-2">
             <AlertTriangle size={12} />
             <span>Items below threshold</span>
@@ -245,18 +173,18 @@ export const Dashboard: React.FC = () => {
             Stock Deficiencies & Reorder Watchlist
           </h2>
           <span className="text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-md">
-            {lowStockItems.length} SKUs Require Action
+            {20} SKUs Require Action
           </span>
         </div>
 
-        <DataTable<DashboardProduct>
+        {/* <DataTable<DashboardProduct>
           records={lowStockItems}
           columns={columns}
           meta={paginationMeta}
           onPageChange={setCurrentPage}
           onPageSizeChange={setPageSize}
           getRowKey={(record) => record.id}
-        />
+        /> */}
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 import type { ProductStatus } from '@/enum/product';
 import type { PaginationMeta } from '@/interfaces';
+import type { IBusiness } from '@/interfaces/business.interface';
 import type { ICategory } from '@/interfaces/category.interface';
+import type { IStock } from '@/interfaces/stock.interface';
 import type { IStore } from '@/interfaces/store.interface';
 import type { IUser } from '@/interfaces/user.interface';
 
@@ -36,25 +38,26 @@ export interface ProductImage {
 }
 
 export interface Product {
-  images: CloudinaryImage[];
   id: string;
   name: string;
-  stock_quantity: number;
-  reorder_level: number;
+  description?: string | null;
+  images: CloudinaryImage[];
   cost_price: number;
   selling_price: number;
   uom_type: UomType;
   uom_base_name: UomBaseName;
   uom_display_name: UomDisplayName;
-  createdAt: Date;
-  updatedAt: Date;
-  category_id: string;
-  business_id: string;
   status: ProductStatus;
-  category?: ICategory;
-  description?: string;
+  stocks: IStock[];
+  category_id: string | null;
+  business_id: string;
+  category?: ICategory | null;
   suppliers?: Supplier[];
   purchase_orders?: PurchaseOrder[];
+  business: IBusiness;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at: Date | null;
 }
 
 export interface PurchaseOrder {
@@ -105,6 +108,7 @@ export type CategoriesResponse = PaginatedResponse<ICategory, 'categories'>;
 export type UsersResponse = PaginatedResponse<IUser, 'users'>;
 export type StoresResponse = PaginatedResponse<IStore, 'stores'>;
 export type SuppliersResponse = PaginatedResponse<Supplier, 'suppliers'>;
+export type StocksResponse = PaginatedResponse<IStock, 'stocks'>;
 export type PurchaseOrdersResponse = PaginatedResponse<
   PurchaseOrder,
   'purchase_orders'

@@ -1,52 +1,80 @@
-// pages/StocksPage.tsx
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Layers,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Plus,
   Search,
+  ArrowUpDown,
+  Filter,
+  Package,
+  AlertTriangle,
+  Store as StoreIcon,
 } from 'lucide-react';
+
 import type { IStock } from '@/interfaces/stock.interface';
-import { MutationReason, MutationType } from '@/enum/stock.enum';
+import type { StocksResponse } from '@/types';
+import useDebouncedValue from '@/hooks/debounceHook';
+
 import DataTable from '../common/DataTable';
+import { LoadingScreen } from '../common/Error/LoadingScreen';
+import { ErrorPage } from '../common/Error/ErrorPage';
+import { getAllStocks } from '@/services/stocks.api';
 
 export const StocksPage = () => {
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  // Search & sort
   const [searchQuery, setSearchQuery] = useState('');
-  const [stocks] = useState<IStock[]>([
-    {
-      id: 'stk_1',
-      product_id: 'prod_101',
-      product: {
-        id: 'prod_101',
-        name: 'MacBook Pro 16" M3 Max',
-        sku: 'MBP-M3-16',
-      },
-      type: MutationType.INFLOW,
-      reason: MutationReason.SUPPLIER_RESTOCK,
-      quantity: 15,
-      unit_cost_price: 2100.0,
-      unit_selling_price: 2499.0,
-      created_at: new Date('2024-03-01T10:30:00'),
-      updated_at: new Date('2024-03-01T10:30:00'),
-    },
-    {
-      id: 'stk_2',
-      product_id: 'prod_102',
-      product: {
-        id: 'prod_102',
-        name: 'Logitech MX Master 3S',
-        sku: 'LOG-MX3S',
-      },
-      type: MutationType.OUTFLOW,
-      reason: MutationReason.CUSTOMER_SALE,
-      quantity: 2,
-      unit_cost_price: 70.0,
-      unit_selling_price: 99.0,
-      created_at: new Date('2024-03-02T14:15:00'),
-      updated_at: new Date('2024-03-02T14:15:00'),
-    },
-  ]);
+  const [selectedSort, setSelectedSort] = useState('updated_at');
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+
+  const debouncedSearch = useDebouncedValue(searchQuery.trim(), 350);
+
+  const { data, isLoading, isError, error, isPlaceholderData, refetch } =
+    useQuery<StocksResponse>({
+      queryKey: [
+        'stocks',
+        {
+          page,
+          limit,
+          search: debouncedSearch,
+          sortBy: selectedSort,
+          order: sortOrder,
+        },
+      ],
+
+      queryFn: () =>
+        getAllStocks({
+          page,
+          limit,
+          search: debouncedSearch,
+          sortBy: selectedSort,
+          order: sortOrder,
+        }),
+
+      placeholderData: (previousData) => previousData,
+    });
+
+  const stocks = data?.stocks ?? [];
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    setLimit(newSize);
+    setPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
+  };
 
   const columns = useMemo(
     () => [
@@ -55,131 +83,269 @@ export const StocksPage = () => {
         header: 'Product',
         width: '30%',
         render: (stock: IStock) => (
-          <div>
-            <div className="font-semibold text-slate-800 line-clamp-1">
-              {stock.product?.name || stock.product_id}
+          <div className="flex items-center gap-3">
+            {stock.product?.images?.[0]?.url ? (
+              <img
+                src={stock.product.images[0].url}
+                alt={stock.product.name}
+                className="w-9 h-9 rounded-lg object-cover shrink-0 border border-slate-200"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                <Package className="w-4 h-4" />
+              </div>
+            )}
+
+            <div className="min-w-0">
+              <div className="font-semibold text-slate-800 line-clamp-1">
+                {stock.product?.name || stock.product_id}
+              </div>
             </div>
-            {stock.product?.sku && (
-              <span className="text-xs font-mono text-slate-400">
-                SKU: {stock.product.sku}
+          </div>
+        ),
+      },
+
+      {
+        key: 'store',
+        header: 'Store',
+        width: '20%',
+        render: (stock: IStock) => (
+          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+            <StoreIcon className="w-3.5 h-3.5 text-slate-400" />
+
+            <span>{stock.store?.name || stock.store_id}</span>
+          </div>
+        ),
+      },
+
+      {
+        key: 'quantity',
+        header: 'Current Stock',
+        width: '15%',
+        render: (stock: IStock) => (
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-sm font-bold text-slate-800">
+              {stock.quantity}
+            </span>
+
+            {stock.product?.uom_display_name && (
+              <span className="text-xs text-slate-400">
+                {stock.product.uom_display_name}
               </span>
             )}
           </div>
         ),
       },
+
       {
-        key: 'type',
-        header: 'Movement',
+        key: 'reorder_level',
+        header: 'Reorder Level',
+        width: '15%',
+        render: (stock: IStock) => (
+          <span className="text-xs font-medium text-slate-600">
+            {stock.reorder_level}
+          </span>
+        ),
+      },
+
+      {
+        key: 'status',
+        header: 'Status',
         width: '15%',
         render: (stock: IStock) => {
-          const isInflow = stock.type === MutationType.INFLOW;
+          const quantity = Number(stock.quantity ?? 0);
+          const reorderLevel = Number(stock.reorder_level ?? 0);
+
+          if (quantity <= 0) {
+            return (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">
+                <AlertTriangle className="w-3 h-3" />
+                Out of Stock
+              </span>
+            );
+          }
+
+          if (quantity <= reorderLevel) {
+            return (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">
+                <AlertTriangle className="w-3 h-3" />
+                Low Stock
+              </span>
+            );
+          }
+
           return (
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${
-                isInflow
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'bg-amber-50 text-amber-700'
-              }`}
-            >
-              {isInflow ? (
-                <ArrowDownLeft className="w-3 h-3" />
-              ) : (
-                <ArrowUpRight className="w-3 h-3" />
-              )}
-              {stock.type}
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+              In Stock
             </span>
           );
         },
       },
+
       {
-        key: 'reason',
-        header: 'Reason',
-        width: '20%',
+        key: 'updated_at',
+        header: 'Last Updated',
+        width: '15%',
         render: (stock: IStock) => (
-          <span className="text-xs font-medium text-slate-600 uppercase tracking-wider">
-            {stock.reason.replace(/_/g, ' ')}
+          <span className="text-xs text-slate-500">
+            {new Date(stock.updated_at).toLocaleDateString()}
           </span>
-        ),
-      },
-      {
-        key: 'quantity',
-        header: 'Quantity',
-        width: '10%',
-        render: (stock: IStock) => (
-          <span
-            className={`text-xs font-bold ${
-              stock.type === MutationType.INFLOW
-                ? 'text-emerald-600'
-                : 'text-slate-800'
-            }`}
-          >
-            {stock.type === MutationType.INFLOW
-              ? `+${stock.quantity}`
-              : `-${stock.quantity}`}
-          </span>
-        ),
-      },
-      {
-        key: 'pricing',
-        header: 'Cost / Selling',
-        width: '25%',
-        render: (stock: IStock) => (
-          <div className="text-xs">
-            <span className="text-slate-700 font-medium">
-              ${stock.unit_cost_price.toFixed(2)}
-            </span>
-            <span className="text-slate-400 mx-1">/</span>
-            <span className="text-slate-500">
-              ${stock.unit_selling_price.toFixed(2)}
-            </span>
-          </div>
         ),
       },
     ],
     [],
   );
 
+  if (isLoading) {
+    return <LoadingScreen label="Fetching inventory..." />;
+  }
+
+  if (isError) {
+    return (
+      <ErrorPage
+        title="Failed to load inventory"
+        message={
+          error instanceof Error
+            ? error.message
+            : 'An error occurred while loading stock records.'
+        }
+        onRetry={() => refetch()}
+        onNavigateHome={() => window.history.back()}
+      />
+    );
+  }
+
+  const totalStocks = data?.meta?.totalItems ?? stocks.length;
+
+  const lowStockCount = stocks.filter(
+    (stock: IStock) =>
+      Number(stock.quantity) > 0 &&
+      Number(stock.quantity) <= Number(stock.reorder_level),
+  ).length;
+
+  const outOfStockCount = stocks.filter(
+    (stock: IStock) => Number(stock.quantity) <= 0,
+  ).length;
+
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Stock Ledger
-          </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Audit inventory inflow, outflow, and manual stock adjustments.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Adjust Stock
-        </button>
+    <div className="p-6 max-w-7xl mx-auto space-y-6 min-h-screen bg-slate-50/50">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          Inventory
+        </h1>
+
+        <p className="text-sm text-slate-500 mt-1">
+          Monitor current stock balances across your stores.
+        </p>
       </div>
 
+      {/* Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-4 bg-white border border-slate-200/80 rounded-xl shadow-2xs">
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+            Stock Records
+          </p>
+
+          <p className="text-xl font-bold text-slate-900 mt-1">{totalStocks}</p>
+        </div>
+
+        <div className="p-4 bg-white border border-slate-200/80 rounded-xl shadow-2xs">
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+            Low Stock
+          </p>
+
+          <p className="text-xl font-bold text-amber-600 mt-1">
+            {lowStockCount}
+          </p>
+        </div>
+
+        <div className="p-4 bg-white border border-slate-200/80 rounded-xl shadow-2xs">
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+            Out of Stock
+          </p>
+
+          <p className="text-xl font-bold text-red-600 mt-1">
+            {outOfStockCount}
+          </p>
+        </div>
+      </div>
+
+      {/* Stock table */}
       <DataTable<IStock>
         records={stocks}
         columns={columns}
+        meta={data?.meta}
+        isLoading={isLoading}
+        isPlaceholderData={isPlaceholderData}
         getRowKey={(record) => record.id}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
         emptyState={{
-          icon: <Layers className="w-7 h-7" />,
-          title: 'No stock movements recorded',
+          icon: <Layers className="w-7 h-7 text-slate-400" />,
+          title: 'No stock records found',
           description:
-            'Inflows, sales, and audit adjustments will appear here.',
+            'Current inventory balances will appear here when stock is available.',
         }}
         header={
-          <div className="p-4 border-b border-slate-200/60 bg-white flex items-center justify-between">
+          <div className="p-4 border-b border-slate-200/60 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
+            {/* Search */}
             <div className="relative w-full sm:w-80">
+              <label htmlFor="stock-search" className="sr-only">
+                Search inventory
+              </label>
+
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+
               <input
+                id="stock-search"
                 type="search"
-                placeholder="Search ledger by product name or SKU..."
+                placeholder="Search product or SKU..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs text-slate-800 bg-slate-50/50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-slate-300"
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="
+                  w-full pl-9 pr-3 py-1.5 text-xs font-normal
+                  text-slate-800 placeholder:text-slate-400
+                  bg-slate-50/50 border border-slate-200
+                  rounded-lg outline-none focus:bg-white
+                  focus:ring-2 focus:ring-slate-300
+                  focus:border-slate-300 transition-all
+                "
               />
+            </div>
+
+            {/* Sort */}
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <div className="flex items-center gap-1.5 bg-slate-50/50 border border-slate-200 rounded-lg p-1">
+                <span className="text-xs text-slate-500 pl-2 font-medium flex items-center gap-1">
+                  <Filter className="w-3 h-3" />
+                  Sort by:
+                </span>
+
+                <select
+                  aria-label="Select sort field"
+                  value={selectedSort}
+                  onChange={(e) => {
+                    setSelectedSort(e.target.value);
+                    setPage(1);
+                  }}
+                  className="bg-transparent text-xs text-slate-700 font-medium outline-none cursor-pointer pr-1"
+                >
+                  <option value="updated_at">Last Updated</option>
+                  <option value="created_at">Date Created</option>
+                  <option value="quantity">Quantity</option>
+                  <option value="reorder_level">Reorder Level</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={toggleSortOrder}
+                  aria-label={`Sort direction ${sortOrder}`}
+                  className="p-1 hover:bg-slate-200/60 rounded text-slate-600 transition-colors cursor-pointer"
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         }
@@ -187,3 +353,5 @@ export const StocksPage = () => {
     </div>
   );
 };
+
+export default StocksPage;
