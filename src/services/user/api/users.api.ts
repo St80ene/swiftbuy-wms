@@ -28,10 +28,10 @@ export const usersService = {
   /**
    * Get all users
    */
-  getAll: async (params: BasePaginationParams = {}): Promise<UsersResponse> => {
-    const response = await apiClient.get<UsersResponse>('/users', { params });
-
-    return response.data;
+  getAll: async (params: BasePaginationParams = {}) => {
+    const response = await apiClient.get('/users', { params });
+    console.log('Fetched users response:', response.data.data); // Debug log
+    return response.data.data;
   },
 
   /**

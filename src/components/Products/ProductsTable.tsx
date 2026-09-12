@@ -1,10 +1,6 @@
 import { Eye } from 'lucide-react';
 import DataTable from '@/components/common/DataTable';
-import {
-  formatStockQuantity,
-  formatReorderLevel,
-  formatCurrency,
-} from '../common/utils';
+import { formatCurrency } from '../common/utils';
 import type { DataTableColumn } from '@/interfaces/data_table';
 import type { ProductTableProps } from '@/interfaces/products';
 import type { Product } from '@/types';
@@ -78,36 +74,6 @@ const ProductTable = ({
         );
       },
     },
-    {
-      key: 'stock',
-      header: 'Stock',
-      render: (product) => {
-        const isDeficient = product.stock_quantity <= product.reorder_level;
-
-        return (
-          <div>
-            <div
-              className={`font-semibold text-sm ${
-                isDeficient ? 'text-rose-600' : 'text-slate-800'
-              }`}
-            >
-              {formatStockQuantity(product)}
-            </div>
-
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] uppercase text-slate-400">
-                {product.uom_type}
-              </span>
-
-              <span className="text-[11px] text-slate-400">
-                Min: {formatReorderLevel(product)}
-              </span>
-            </div>
-          </div>
-        );
-      },
-    },
-
     {
       key: 'cost',
       header: 'Cost',

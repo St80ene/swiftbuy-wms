@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Users as UsersIcon,
   UserPlus,
@@ -31,7 +31,7 @@ export const UsersPage = () => {
   // Search & sort state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSort, setSelectedSort] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('ASC');
 
   const debouncedSearch = useDebouncedValue(searchQuery.trim(), 350);
 
@@ -45,7 +45,7 @@ export const UsersPage = () => {
           limit,
           search: debouncedSearch,
           sortBy: selectedSort,
-          sortOrder,
+          order: sortOrder,
         },
       ],
       queryFn: () =>
@@ -54,7 +54,7 @@ export const UsersPage = () => {
           limit,
           search: debouncedSearch,
           sortBy: selectedSort,
-          sortOrder,
+          order: sortOrder,
         }),
       placeholderData: (previousData) => previousData,
     });
@@ -72,7 +72,7 @@ export const UsersPage = () => {
   };
 
   const toggleSortOrder = () => {
-    setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
   };
 
   // Reset pagination when searching
