@@ -108,6 +108,7 @@ export type CategoriesResponse = PaginatedResponse<ICategory, 'categories'>;
 export type UsersResponse = PaginatedResponse<IUser, 'users'>;
 export type StoresResponse = PaginatedResponse<IStore, 'stores'>;
 export type SuppliersResponse = PaginatedResponse<Supplier, 'suppliers'>;
+export type StocksResponse = PaginatedResponse<IStock, 'stocks'>;
 export type PurchaseOrdersResponse = PaginatedResponse<
   PurchaseOrder,
   'purchase_orders'
