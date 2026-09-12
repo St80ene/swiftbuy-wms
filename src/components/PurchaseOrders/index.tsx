@@ -1,25 +1,12 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Plus, Truck, Eye } from 'lucide-react';
-import DataTable from '../Common/DataTable';
-import type { DataTableColumn, PaginationMeta } from '@/interfaces/data_table';
-
-export enum PurchaseOrderStatus {
-  PENDING = 'PENDING',
-  PENDING_APPROVAL = 'PENDING_APPROVAL',
-  APPROVED = 'APPROVED',
-  SENT_TO_SUPPLIER = 'SENT_TO_SUPPLIER',
-  RECEIVED = 'RECEIVED',
-  CANCELLED = 'CANCELLED',
-}
-
-export interface PurchaseOrderItem {
-  id: string;
-  purchase_order_id: string;
-  product_id: string;
-  product_name: string;
-  quantity_requested: number;
-  estimated_unit_cost: number;
-}
+import type { PaginationMeta } from '@/interfaces';
+import {
+  PurchaseOrderStatus,
+  type PurchaseOrderItem,
+} from '@/interfaces/purchase_order.interface';
+import type { DataTableColumn } from '@/interfaces/data_table';
+import DataTable from '../common/DataTable';
 
 export interface PurchaseOrder {
   id: string;
@@ -88,6 +75,7 @@ export const PurchaseOrdersPage: React.FC = () => {
 
   const meta: PaginationMeta = {
     currentPage,
+    itemCount: orders.length,
     itemsPerPage: pageSize,
     totalItems: orders.length,
     totalPages: Math.ceil(orders.length / pageSize) || 1,

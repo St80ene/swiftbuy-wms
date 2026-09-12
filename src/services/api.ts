@@ -1,8 +1,10 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { tokenStorage } from './auth/utils/token_storage.util';
 
+const API_BASE_URL = import.meta.env.VITE_API_BACKEND_URL;
+
 const apiClient = axios.create({
-  baseURL: `http://${import.meta.env.VITE_API_HOST}:${import.meta.env.VITE_API_PORT}/${import.meta.env.VITE_API_PREFIX}`,
+  baseURL: API_BASE_URL,
 });
 
 apiClient.interceptors.request.use((config) => {
@@ -70,12 +72,9 @@ apiClient.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/auth/refresh`,
-        {
-          refreshToken,
-        },
-      );
+      const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+        refreshToken,
+      });
 
       const { accessToken, refreshToken: newRefreshToken } = response.data;
 

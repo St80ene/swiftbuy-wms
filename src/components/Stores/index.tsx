@@ -1,172 +1,271 @@
-// pages/StoresPage.tsx
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Store as StoreIcon,
+  Building2,
+  Edit,
+  Eye,
+  MapPin,
   Plus,
   Search,
-  MapPin,
-  Phone,
-  Edit2,
+  Store as StoreIcon,
   Trash2,
 } from 'lucide-react';
-import type { IStore } from '@/interfaces/store.interface';
-import DataTable from '../common/DataTable';
+import { useQuery } from '@tanstack/react-query';
 
-export const StoresPage = () => {
+import DataTable from '@/components/common/DataTable';
+import type { IStore } from '@/interfaces/store.interface';
+import type { StoresResponse } from '@/types';
+import { storeService } from '@/services/stores';
+import useDebouncedValue from '@/hooks/debounceHook';
+import { LoadingScreen } from '../common/Error/LoadingScreen';
+import { ErrorPage } from '../common/Error/ErrorPage';
+
+const StoresPage = () => {
+  const navigate = useNavigate();
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [stores, setStores] = useState<IStore[]>([
-    {
-      id: 'str_1',
-      business_id: 'biz_123',
-      name: 'Main Downtown Outlet',
-      code: 'STORE-001',
-      address: '102 Commercial Avenue',
-      city: 'Lagos',
-      state: 'Lagos',
-      country: 'Nigeria',
-      phone_number: '+234 801 234 5678',
-      created_at: new Date('2023-11-01'),
-      updated_at: new Date('2024-01-20'),
-    },
-    {
-      id: 'str_2',
-      business_id: 'biz_123',
-      name: 'Ikeja Logistics Hub',
-      code: 'STORE-002',
-      address: '45 Industrial Estate Road',
-      city: 'Ikeja',
-      state: 'Lagos',
-      country: 'Nigeria',
-      phone_number: '+234 809 876 5432',
-      created_at: new Date('2024-01-15'),
-      updated_at: new Date('2024-02-10'),
-    },
-  ]);
+  const [selectedSort, setSelectedSort] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  const debouncedSearch = useDebouncedValue(searchQuery, 500);
+
+  const { data, isLoading, isError, error, isPlaceholderData, refetch } =
+    useQuery<StoresResponse>({
+      queryKey: [
+        'stores',
+        {
+          page,
+          limit,
+          search: debouncedSearch,
+          sortBy: selectedSort,
+          sortOrder,
+        },
+      ],
+      queryFn: () =>
+        storeService.getAllStores({
+          page,
+          limit,
+          search: debouncedSearch,
+          order: sortOrder,
+        }),
+      placeholderData: (previousData) => previousData,
+    });
+
+  const stores = data?.stores ?? [];
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    setLimit(newSize);
+    setPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+  };
+
+  const handleSortChange = (sortBy: string) => {
+    if (selectedSort === sortBy) {
+      setSortOrder((current) => (current === 'ASC' ? 'DESC' : 'ASC'));
+      return;
+    }
+
+    setSelectedSort(sortBy);
+    setSortOrder('ASC');
+  };
 
   const columns = useMemo(
     () => [
       {
         key: 'name',
-        header: 'Store / Outlet',
-        width: '30%',
+        header: 'Store',
+        sortable: true,
+        onSort: () => handleSortChange('name'),
         render: (store: IStore) => (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-              <StoreIcon className="w-4 h-4" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <StoreIcon className="h-5 w-5 text-primary" />
             </div>
-            <div>
-              <div className="font-semibold text-slate-800 line-clamp-1">
+
+            <div className="min-w-0">
+              <p className="truncate font-medium text-gray-900 dark:text-white">
                 {store.name}
-              </div>
-              <span className="text-xs font-mono text-slate-400">
-                {store.code}
-              </span>
+              </p>
+
+              <p className="text-xs text-gray-500">{store.code}</p>
             </div>
           </div>
         ),
       },
+
       {
-        key: 'location',
+        key: 'address',
         header: 'Location',
-        width: '35%',
+        sortable: true,
+        onSort: () => handleSortChange('address'),
         render: (store: IStore) => (
-          <div className="flex items-start gap-1.5 text-xs text-slate-600">
-            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-            <span className="line-clamp-2">
-              {[store.address, store.city, store.state, store.country]
-                .filter(Boolean)
-                .join(', ')}
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-gray-400" />
+
+            <span className="max-w-[220px] truncate text-sm text-gray-600 dark:text-gray-300">
+              {store.address || 'No address'}
             </span>
           </div>
         ),
       },
+
       {
-        key: 'phone_number',
-        header: 'Contact',
-        width: '20%',
+        key: 'business_id',
+        header: 'Business',
         render: (store: IStore) => (
-          <div className="flex items-center gap-1.5 text-xs text-slate-600">
-            <Phone className="w-3.5 h-3.5 text-slate-400" />
-            <span>{store.phone_number || 'N/A'}</span>
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-gray-400" />
+
+            <span className="text-sm text-gray-600 dark:text-gray-300">
+              {store.business_id}
+            </span>
           </div>
         ),
       },
+
+      {
+        key: 'created_at',
+        header: 'Created',
+        sortable: true,
+        onSort: () => handleSortChange('created_at'),
+        render: (store: IStore) => (
+          <span className="text-sm text-gray-600 dark:text-gray-300">
+            {store.created_at
+              ? new Date(store.created_at).toLocaleDateString()
+              : '—'}
+          </span>
+        ),
+      },
+
       {
         key: 'actions',
-        header: <span className="sr-only">Actions</span>,
-        width: '15%',
-        cellClassName: 'text-right',
+        header: 'Actions',
         render: (store: IStore) => (
-          <div
-            className="flex items-center justify-end gap-1"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="flex items-center gap-1">
             <button
               type="button"
-              aria-label={`Edit ${store.name}`}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+              title="View store"
+              onClick={() => navigate(`/stores/${store.id}`)}
+              className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white"
             >
-              <Edit2 className="w-4 h-4" />
+              <Eye className="h-4 w-4" />
             </button>
+
             <button
               type="button"
-              aria-label={`Delete ${store.name}`}
-              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              title="Edit store"
+              onClick={() => navigate(`/stores/${store.id}/edit`)}
+              className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white"
             >
-              <Trash2 className="w-4 h-4" />
+              <Edit className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              title="Delete store"
+              onClick={() => {
+                // Add delete confirmation/modal here.
+              }}
+              className="rounded-lg p-2 text-gray-500 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+            >
+              <Trash2 className="h-4 w-4" />
             </button>
           </div>
         ),
       },
     ],
-    [],
+    [navigate, selectedSort, sortOrder],
   );
 
+  if (isLoading) {
+    return <LoadingScreen label="Fetching stores..." />;
+  }
+
+  if (isError) {
+    return (
+      <ErrorPage
+        title="Failed to load stores"
+        message={
+          error instanceof Error
+            ? error.message
+            : 'An error occurred while loading store records.'
+        }
+        onRetry={() => refetch()}
+        onNavigateHome={() => navigate('/dashboard')}
+      />
+    );
+  }
+
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Stores & Locations
-          </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Manage physical branch outlets and fulfillment hubs.
-          </p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+              <StoreIcon className="h-6 w-6 text-primary" />
+            </div>
+
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                Stores
+              </h1>
+
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Manage your business store locations.
+              </p>
+            </div>
+          </div>
         </div>
+
         <button
           type="button"
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm cursor-pointer"
+          onClick={() => navigate('/stores/create')}
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="h-4 w-4" />
           Add Store
         </button>
       </div>
 
+      {/* Search */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder="Search stores..."
+            className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+          />
+        </div>
+      </div>
+
+      {/* Table */}
       <DataTable<IStore>
         records={stores}
         columns={columns}
-        getRowKey={(record) => record.id}
-        emptyState={{
-          icon: <StoreIcon className="w-7 h-7" />,
-          title: 'No stores configured',
-          description:
-            'Add your business physical stores to handle branch inventory.',
-        }}
-        header={
-          <div className="p-4 border-b border-slate-200/60 bg-white flex items-center justify-between">
-            <div className="relative w-full sm:w-80">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              <input
-                type="search"
-                placeholder="Search stores by code or location..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs text-slate-800 bg-slate-50/50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-slate-300"
-              />
-            </div>
-          </div>
-        }
+        meta={data?.meta}
+        isLoading={isLoading}
+        isPlaceholderData={isPlaceholderData}
+        getRowKey={(record: IStore) => record.id}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
       />
     </div>
   );
 };
+
+export default StoresPage;

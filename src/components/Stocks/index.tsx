@@ -13,7 +13,7 @@ import DataTable from '../common/DataTable';
 
 export const StocksPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [stocks, setStocks] = useState<IStock[]>([
+  const [stocks] = useState<IStock[]>([
     {
       id: 'stk_1',
       product_id: 'prod_101',

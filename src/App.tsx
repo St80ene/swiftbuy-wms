@@ -18,11 +18,11 @@ import ProductDetails from './components/Products/ProductDetails';
 import CategoriesPage from './components/Categories';
 import { UsersPage } from './components/Users';
 import { SuppliersPage } from './components/Suppliers';
-import { StoresPage } from './components/Stores';
 import { ReportsPage } from './components/Reports';
 import { StockMovementsPage } from './components/StockMovements';
 import { AuditLogsPage } from './components/AuditLogs';
 import { PurchaseOrdersPage } from './components/PurchaseOrders';
+import StoresPage from './components/Stores';
 
 export default function App() {
   return (
