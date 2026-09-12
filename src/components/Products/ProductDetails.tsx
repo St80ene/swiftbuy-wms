@@ -163,9 +163,6 @@ export default function ProductDetailsPage() {
       ? ((profitMargin / product.selling_price) * 100).toFixed(1)
       : '0';
 
-  const isOut = product.stock_quantity <= 0;
-  const isLow = product.stock_quantity <= product.reorder_level;
-
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header Bar */}
@@ -184,22 +181,6 @@ export default function ProductDetailsPage() {
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
                 {product.name}
               </h1>
-              {isOut ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                  Out of Stock
-                </span>
-              ) : isLow ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  Low Stock
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  In Stock
-                </span>
-              )}
             </div>
             <p className="text-xs text-slate-400 mt-1 font-mono">
               ID: {product.id}
@@ -239,13 +220,9 @@ export default function ProductDetailsPage() {
           <div>
             <p className="text-xs font-medium text-slate-500">Stock Quantity</p>
             <p className="text-xl font-bold text-slate-900 mt-0.5">
-              {product.stock_quantity}{' '}
               <span className="text-xs text-slate-400 font-normal">
                 {product.uom_display_name}
               </span>
-            </p>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Reorder Level: {product.reorder_level}
             </p>
           </div>
         </motion.div>
@@ -438,13 +415,13 @@ export default function ProductDetailsPage() {
                   <div className="py-2.5 flex justify-between">
                     <dt className="text-slate-500">Created</dt>
                     <dd className="font-medium text-slate-700">
-                      {new Date(product?.createdAt).toLocaleDateString()}
+                      {new Date(product?.created_at).toLocaleDateString()}
                     </dd>
                   </div>
                   <div className="py-2.5 flex justify-between">
                     <dt className="text-slate-500">Last Updated</dt>
                     <dd className="font-medium text-slate-700">
-                      {new Date(product.updatedAt).toLocaleDateString()}
+                      {new Date(product?.updated_at).toLocaleDateString()}
                     </dd>
                   </div>
                 </dl>

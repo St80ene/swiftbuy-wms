@@ -1,18 +1,4 @@
-import { type Product, UomType, type UomDisplayName } from '../../types';
-
-export const formatStockQuantity = (product: Product): string =>
-  formatQuantity(
-    product.stock_quantity,
-    product.uom_type,
-    product.uom_display_name,
-  );
-
-export const formatReorderLevel = (product: Product): string =>
-  formatQuantity(
-    product.reorder_level,
-    product.uom_type,
-    product.uom_display_name,
-  );
+import { UomType, type UomDisplayName } from '../../types';
 
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-US', {
