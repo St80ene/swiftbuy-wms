@@ -14,7 +14,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { SecuritySettingsSection } from '@/components/Settings/SecuritySettingsSection';
 import { useAuth } from '@/services/auth/hooks/useAuth';
-import { EditProfileModal } from '../User/EditProfileModal';
+import { EditProfileModal } from '../Users/EditProfileModal';
 import type { IUser } from '@/interfaces/user.interface';
 
 export const UserProfilePage: FC = () => {

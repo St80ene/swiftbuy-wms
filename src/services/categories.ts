@@ -1,14 +1,18 @@
 import type { ApiResponse, BasePaginationParams } from '@/interfaces';
 
 import apiClient from './api';
-import type { ICategory } from '@/interfaces/category.interface';
+import type {
+  CategoryFormData,
+  ICategory,
+} from '@/interfaces/category.interface';
+import type { CategoriesResponse } from '@/types';
 
 const CATEGORIES_RESOURCE = '/categories';
 
 export const categoryService = {
   getAllCategories: async (
     params: BasePaginationParams = {},
-  ): Promise<ApiResponse<ICategory[]>> => {
+  ): Promise<CategoriesResponse> => {
     const response = await apiClient.get(CATEGORIES_RESOURCE, {
       params: {
         page: params.page ?? 1,
@@ -32,7 +36,7 @@ export const categoryService = {
   },
 
   createCategory: async (
-    categoryData: ICategory,
+    categoryData: CategoryFormData,
   ): Promise<ApiResponse<ICategory>> => {
     const response = await apiClient.post<ApiResponse<ICategory>>(
       CATEGORIES_RESOURCE,
@@ -44,7 +48,7 @@ export const categoryService = {
 
   updateCategory: async (
     categoryId: string,
-    categoryData: ICategory,
+    categoryData: CategoryFormData,
   ): Promise<ApiResponse<ICategory>> => {
     const response = await apiClient.patch<ApiResponse<ICategory>>(
       `${CATEGORIES_RESOURCE}/${categoryId}`,

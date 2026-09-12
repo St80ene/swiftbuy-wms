@@ -1,10 +1,10 @@
-interface ProductSearchProps {
+interface ItemSearchProps {
   value: string;
   onChange: (value: string) => void;
   isFetching?: boolean;
 }
 
-const ProductSearch: React.FC<ProductSearchProps> = ({
+const ItemsSearch: React.FC<ItemSearchProps> = ({
   value,
   onChange,
   isFetching = false,
@@ -53,4 +53,4 @@ const ProductSearch: React.FC<ProductSearchProps> = ({
   );
 };
 
-export default ProductSearch;
+export default ItemsSearch;

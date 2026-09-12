@@ -1,5 +1,8 @@
 import type { ProductStatus } from '@/enum/product';
 import type { PaginationMeta } from '@/interfaces';
+import type { ICategory } from '@/interfaces/category.interface';
+import type { IStore } from '@/interfaces/store.interface';
+import type { IUser } from '@/interfaces/user.interface';
 
 export interface CloudinaryImage {
   url: string;
@@ -45,8 +48,10 @@ export interface Product {
   uom_display_name: UomDisplayName;
   createdAt: Date;
   updatedAt: Date;
+  category_id: string;
+  business_id: string;
   status: ProductStatus;
-  category?: string;
+  category?: ICategory;
   description?: string;
   suppliers?: Supplier[];
   purchase_orders?: PurchaseOrder[];
@@ -95,3 +100,12 @@ export type PaginatedResponse<T, K extends string> = {
 };
 
 export type ProductsResponse = PaginatedResponse<Product, 'products'>;
+
+export type CategoriesResponse = PaginatedResponse<ICategory, 'categories'>;
+export type UsersResponse = PaginatedResponse<IUser, 'users'>;
+export type StoresResponse = PaginatedResponse<IStore, 'stores'>;
+export type SuppliersResponse = PaginatedResponse<Supplier, 'suppliers'>;
+export type PurchaseOrdersResponse = PaginatedResponse<
+  PurchaseOrder,
+  'purchase_orders'
+>;

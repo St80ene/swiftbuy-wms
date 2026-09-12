@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { User, Phone, Info, Camera, X } from 'lucide-react';
 import BaseModal from '../common/BaseModal';
-import { usersApi } from '@/services/user/api/users.api';
 import type { IUser } from '@/interfaces/user.interface';
+import { usersService } from '@/services/user/api/users.api';
 
 export interface CloudinaryImage {
   url: string;
@@ -205,7 +205,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         payload.append('profile_picture', selectedFile);
       }
 
-      const { data } = await usersApi.update(initialData.id, payload);
+      const { data } = await usersService.update(initialData.id, payload);
 
       onSuccess(data);
       onClose();

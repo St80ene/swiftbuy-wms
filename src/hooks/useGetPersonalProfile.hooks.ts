@@ -1,9 +1,9 @@
-import { usersApi } from '@/services/user/api/users.api';
 import { useQuery } from '@tanstack/react-query';
+import { usersService } from '@/services/user/api/users.api';
 
 export const useGetPersonalProfile = (id: string) => {
   return useQuery({
     queryKey: ['personal_profile'],
-    queryFn: () => usersApi.getById(id),
+    queryFn: () => usersService.getById(id),
   });
 };

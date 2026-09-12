@@ -25,3 +25,13 @@ export interface ICategory {
   created_at: Date;
   updated_at: Date;
 }
+
+export interface GetCategoryColumnsProps {
+  onEdit: (category: ICategory) => void;
+  onDelete: (category: ICategory) => void;
+}
+
+export interface CategoryFormData {
+  name: string;
+  description: string;
+}

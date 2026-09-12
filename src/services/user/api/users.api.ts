@@ -1,6 +1,7 @@
-import type { ApiResponse } from '@/interfaces';
+import type { ApiResponse, BasePaginationParams } from '@/interfaces';
 import type { IUser } from '@/interfaces/user.interface';
 import apiClient from '@/services/api';
+import type { UsersResponse } from '@/types';
 
 export interface CreateUserPayload {
   first_name: string;
@@ -23,12 +24,12 @@ export interface ChangeUserRolePayload {
   role_id: string;
 }
 
-export const usersApi = {
+export const usersService = {
   /**
    * Get all users
    */
-  getAll: async (): Promise<IUser[]> => {
-    const response = await apiClient.get<IUser[]>('/users');
+  getAll: async (params: BasePaginationParams = {}): Promise<UsersResponse> => {
+    const response = await apiClient.get<UsersResponse>('/users', { params });
 
     return response.data;
   },
@@ -85,3 +86,6 @@ export const usersApi = {
     await apiClient.delete(`/users/${id}`);
   },
 };
+
+export const { getAll, getById, create, update, changeRole, remove } =
+  usersService;

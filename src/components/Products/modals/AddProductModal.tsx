@@ -1,4 +1,5 @@
 import React, {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -6,8 +7,11 @@ import React, {
   type SetStateAction,
   type SubmitEvent,
 } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { UomType, UomBaseName, UomDisplayName } from '../../../enum/product';
 import BaseModal from '../../common/BaseModal';
+import { categoryService } from '@/services/categories';
+import type { ICategory } from '@/interfaces/category.interface';
 
 const UOM_CONFIG: Record<
   UomType,
@@ -30,6 +34,7 @@ const UOM_CONFIG: Record<
 export interface CreateProductFormData {
   name: string;
   description: string;
+  category_id: string;
   reorder_level: string;
   cost_price: string;
   selling_price: string;
@@ -54,9 +59,18 @@ export default function AddProductModal({
 }: AddProductModalProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Fetch available categories
+  const { data: categoriesData, isLoading: isLoadingCategories } = useQuery({
+    queryKey: ['categories-list'],
+    queryFn: () => categoryService.getAllCategories({ page: 1, limit: 100 }),
+  });
+
+  const categories = categoriesData?.categories || [];
+
   const [formData, setFormData] = useState<CreateProductFormData>({
     name: '',
     description: '',
+    category_id: '',
     reorder_level: '5',
     cost_price: '0.00',
     selling_price: '0.00',
@@ -73,7 +87,7 @@ export default function AddProductModal({
     return formData.images.map((file) => URL.createObjectURL(file));
   }, [formData.images]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       previews.forEach((url) => URL.revokeObjectURL(url));
     };
@@ -153,6 +167,9 @@ export default function AddProductModal({
     if (formData.description.trim()) {
       submitPayload.append('description', formData.description.trim());
     }
+    if (formData.category_id) {
+      submitPayload.append('category_id', formData.category_id);
+    }
     submitPayload.append('reorder_level', formData.reorder_level);
     submitPayload.append('cost_price', formData.cost_price);
     submitPayload.append('selling_price', formData.selling_price);
@@ -178,29 +195,53 @@ export default function AddProductModal({
       onClose={() => setIsModalOpen(false)}
       onSubmit={handleSubmit}
     >
-      {/* Product Name */}
-      <div>
-        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-          Product Name <span className="text-rose-500">*</span>
-        </label>
-        <input
-          type="text"
-          name="name"
-          maxLength={150}
-          value={formData.name}
-          onChange={handleInputChange}
-          placeholder="e.g. Premium Coffee Beans"
-          className={`w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden transition-all ${
-            fieldErrors.name
-              ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
-              : 'border-slate-200 focus:border-blue-500 focus:bg-white'
-          }`}
-        />
-        {fieldErrors.name && (
-          <p className="text-[11px] text-rose-600 mt-1 font-medium">
-            {fieldErrors.name}
-          </p>
-        )}
+      {/* Product Name & Category Group */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            Product Name <span className="text-rose-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="name"
+            maxLength={150}
+            value={formData.name}
+            onChange={handleInputChange}
+            placeholder="e.g. Premium Coffee Beans"
+            className={`w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden transition-all ${
+              fieldErrors.name
+                ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
+                : 'border-slate-200 focus:border-blue-500 focus:bg-white'
+            }`}
+          />
+          {fieldErrors.name && (
+            <p className="text-[11px] text-rose-600 mt-1 font-medium">
+              {fieldErrors.name}
+            </p>
+          )}
+        </div>
+
+        {/* Category Select */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            Category{' '}
+            <span className="text-slate-400 font-normal">(Optional)</span>
+          </label>
+          <select
+            name="category_id"
+            value={formData.category_id}
+            onChange={handleInputChange}
+            disabled={isLoadingCategories || isSubmitting}
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all cursor-pointer disabled:opacity-50"
+          >
+            <option value="">Select a Category...</option>
+            {categories.map((cat: ICategory) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Description */}
