@@ -1,7 +1,6 @@
 import type { ApiResponse, BasePaginationParams } from '@/interfaces';
 import type { IUser } from '@/interfaces/user.interface';
 import apiClient from '@/services/api';
-import type { UsersResponse } from '@/types';
 
 export interface CreateUserPayload {
   first_name: string;
