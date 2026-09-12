@@ -239,7 +239,7 @@ export default function ProductDetailsPage() {
           <div>
             <p className="text-xs font-medium text-slate-500">Cost Price</p>
             <p className="text-xl font-bold text-slate-900 mt-0.5">
-              ${product.cost_price.toFixed(2)}
+              ${Number(product.cost_price).toFixed(2)}
             </p>
             <p className="text-xs text-slate-400 mt-0.5">
               Base procurement cost
@@ -259,7 +259,7 @@ export default function ProductDetailsPage() {
           <div>
             <p className="text-xs font-medium text-slate-500">Selling Price</p>
             <p className="text-xl font-bold text-slate-900 mt-0.5">
-              ${product.selling_price.toFixed(2)}
+              ${Number(product.selling_price).toFixed(2)}
             </p>
             <p className="text-xs text-slate-400 mt-0.5">Retail unit price</p>
           </div>

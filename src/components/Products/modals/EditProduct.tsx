@@ -1,14 +1,3 @@
-import BaseModal from '@/components/common/BaseModal';
-import { ProductStatus, UomType } from '@/enum/product';
-import type { ICategory } from '@/interfaces/category.interface';
-import { categoryService } from '@/services/categories';
-import {
-  UomBaseName,
-  UomDisplayName,
-  type CloudinaryImage,
-  type Product,
-} from '@/types';
-import { useQuery } from '@tanstack/react-query';
 import {
   useEffect,
   useMemo,
@@ -17,20 +6,38 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react';
+import { useQuery } from '@tanstack/react-query';
+
+import BaseModal from '@/components/common/BaseModal';
+import {
+  ProductStatus,
+  UomBaseName,
+  UomDisplayName,
+  UomType,
+} from '@/enum/product';
+import type { ICategory } from '@/interfaces/category.interface';
+import { categoryService } from '@/services/categories';
+import type { CloudinaryImage, Product } from '@/types';
+
 const MAX_IMAGES = 5;
 
 const UOM_CONFIG: Record<
   UomType,
-  { defaultBase: UomBaseName; allowedDisplay: UomDisplayName[] }
+  {
+    defaultBase: UomBaseName;
+    allowedDisplay: UomDisplayName[];
+  }
 > = {
   [UomType.UNIT]: {
     defaultBase: UomBaseName.PCS,
     allowedDisplay: [UomDisplayName.PCS],
   },
+
   [UomType.WEIGHT]: {
     defaultBase: UomBaseName.G,
     allowedDisplay: [UomDisplayName.G, UomDisplayName.KG],
   },
+
   [UomType.VOLUME]: {
     defaultBase: UomBaseName.ML,
     allowedDisplay: [UomDisplayName.ML, UomDisplayName.L],
@@ -52,20 +59,21 @@ export default function EditProductModal({
 }: EditProductModalProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Fetch available categories
   const { data: categoriesData, isLoading: isLoadingCategories } = useQuery({
     queryKey: ['categories-list'],
-    queryFn: () => categoryService.getAllCategories({ page: 1, limit: 100 }),
+    queryFn: () =>
+      categoryService.getAllCategories({
+        page: 1,
+        limit: 100,
+      }),
   });
 
   const categories = categoriesData?.categories || [];
 
-  // Form State initialized directly from product prop
   const [formData, setFormData] = useState({
     name: product.name || '',
     description: product.description || '',
     category_id: product.category_id || product.category?.id || '',
-    reorder_level: String(product.reorder_level ?? '5'),
     cost_price: String(product.cost_price ?? '0.00'),
     selling_price: String(product.selling_price ?? '0.00'),
     uom_type: product.uom_type,
@@ -74,21 +82,19 @@ export default function EditProductModal({
     status: product.status,
   });
 
-  // Track existing image URLs from server vs newly added local Files
   const [existingImages, setExistingImages] = useState<CloudinaryImage[]>(
     product.images || [],
   );
+
   const [newImages, setNewImages] = useState<File[]>([]);
 
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  // Generate memory-safe object URLs for newly added local files
   const newPreviews = useMemo(() => {
     return newImages.map((file) => URL.createObjectURL(file));
   }, [newImages]);
 
-  // Clean up object URLs on unmount or file change
   useEffect(() => {
     return () => {
       newPreviews.forEach((url) => URL.revokeObjectURL(url));
@@ -98,11 +104,11 @@ export default function EditProductModal({
   const totalImageCount = existingImages.length + newImages.length;
 
   const handleInputChange = (
-    e: React.ChangeEvent<
+    event: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >,
   ) => {
-    const { name, value } = e.target;
+    const { name, value } = event.target;
 
     if (name === 'uom_type') {
       const newUomType = value as UomType;
@@ -115,23 +121,31 @@ export default function EditProductModal({
         uom_display_name: config.allowedDisplay[0],
       }));
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
     }
 
     if (fieldErrors[name]) {
-      setFieldErrors((prev) => ({ ...prev, [name]: '' }));
+      setFieldErrors((prev) => ({
+        ...prev,
+        [name]: '',
+      }));
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files) return;
 
-    const selectedFiles = Array.from(e.target.files);
+    const selectedFiles = Array.from(event.target.files);
+
     const availableSlots = MAX_IMAGES - totalImageCount;
 
     if (availableSlots <= 0) return;
 
     const filesToAdd = selectedFiles.slice(0, availableSlots);
+
     setNewImages((prev) => [...prev, ...filesToAdd]);
 
     if (fileInputRef.current) {
@@ -140,21 +154,33 @@ export default function EditProductModal({
   };
 
   const removeExistingImage = (index: number) => {
-    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+    setExistingImages((prev) =>
+      prev.filter((_, imageIndex) => imageIndex !== index),
+    );
   };
 
   const removeNewImage = (index: number) => {
-    setNewImages((prev) => prev.filter((_, i) => i !== index));
+    setNewImages((prev) =>
+      prev.filter((_, imageIndex) => imageIndex !== index),
+    );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     setError('');
 
     const errors: Record<string, string> = {};
-    if (!formData.name.trim()) errors.name = 'Product name is required';
+
+    if (!formData.name.trim()) {
+      errors.name = 'Product name is required';
+    }
+
     if (!formData.selling_price || Number(formData.selling_price) <= 0) {
       errors.selling_price = 'Valid selling price required';
+    }
+
+    if (formData.cost_price && Number(formData.cost_price) < 0) {
+      errors.cost_price = 'Cost price cannot be negative';
     }
 
     if (Object.keys(errors).length > 0) {
@@ -164,7 +190,6 @@ export default function EditProductModal({
 
     const submitPayload = new FormData();
 
-    // Helper to append only if value has changed
     const appendIfChanged = (
       key: string,
       newValue: string,
@@ -172,35 +197,38 @@ export default function EditProductModal({
     ) => {
       const trimmedNew = newValue.trim();
       const trimmedOriginal = String(originalValue ?? '').trim();
+
       if (trimmedNew !== trimmedOriginal) {
         submitPayload.append(key, trimmedNew);
       }
     };
 
     appendIfChanged('name', formData.name, product.name);
+
     appendIfChanged('description', formData.description, product.description);
+
     appendIfChanged(
       'category_id',
       formData.category_id,
       product.category_id || product.category?.id,
     );
-    appendIfChanged(
-      'reorder_level',
-      formData.reorder_level,
-      product.reorder_level,
-    );
+
     appendIfChanged('cost_price', formData.cost_price, product.cost_price);
+
     appendIfChanged(
       'selling_price',
       formData.selling_price,
       product.selling_price,
     );
+
     appendIfChanged('uom_type', formData.uom_type, product.uom_type);
+
     appendIfChanged(
       'uom_base_name',
       formData.uom_base_name,
       product.uom_base_name,
     );
+
     appendIfChanged(
       'uom_display_name',
       formData.uom_display_name,
@@ -209,10 +237,32 @@ export default function EditProductModal({
 
     appendIfChanged('status', formData.status, product.status);
 
-    // Append new binary files if added
+    /*
+     * New images are uploaded as binary files.
+     * Existing images are kept unless removed.
+     */
     newImages.forEach((file) => {
       submitPayload.append('images', file);
     });
+
+    /*
+     * Send the remaining existing image URLs so
+     * the backend can determine which saved images
+     * were removed.
+     */
+    const originalImageUrls = (product.images || []).map((image) => image.url);
+
+    const remainingImageUrls = existingImages.map((image) => image.url);
+
+    const imagesChanged =
+      JSON.stringify(remainingImageUrls) !== JSON.stringify(originalImageUrls);
+
+    if (imagesChanged) {
+      submitPayload.append(
+        'existing_images',
+        JSON.stringify(remainingImageUrls),
+      );
+    }
 
     onSubmit(submitPayload);
   };
@@ -220,7 +270,7 @@ export default function EditProductModal({
   return (
     <BaseModal
       title={`Edit ${product.name || 'Product'}`}
-      subtitle="Update product SKU details and images."
+      subtitle="Update product details, pricing, and images."
       error={error}
       isSubmitting={isSubmitting}
       submitLabel="Update Product"
@@ -228,12 +278,13 @@ export default function EditProductModal({
       onClose={() => setIsModalOpen(false)}
       onSubmit={handleSubmit}
     >
-      {/* Product Name & Category Group */}
+      {/* Product Name & Category */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Product Name <span className="text-rose-500">*</span>
           </label>
+
           <input
             type="text"
             name="name"
@@ -246,6 +297,7 @@ export default function EditProductModal({
                 : 'border-slate-200 focus:border-blue-500 focus:bg-white'
             }`}
           />
+
           {fieldErrors.name && (
             <p className="text-[11px] text-rose-600 mt-1 font-medium">
               {fieldErrors.name}
@@ -253,12 +305,12 @@ export default function EditProductModal({
           )}
         </div>
 
-        {/* Category Select */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Category{' '}
             <span className="text-slate-400 font-normal">(Optional)</span>
           </label>
+
           <select
             name="category_id"
             value={formData.category_id}
@@ -267,9 +319,10 @@ export default function EditProductModal({
             className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all cursor-pointer disabled:opacity-50"
           >
             <option value="">Select a Category...</option>
-            {categories.map((cat: ICategory) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
+
+            {categories.map((category: ICategory) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
               </option>
             ))}
           </select>
@@ -282,6 +335,7 @@ export default function EditProductModal({
           Description{' '}
           <span className="text-slate-400 font-normal">(Optional)</span>
         </label>
+
         <textarea
           name="description"
           rows={2}
@@ -297,6 +351,7 @@ export default function EditProductModal({
           <label className="block text-xs font-semibold text-slate-700">
             Product Images
           </label>
+
           <span className="text-[10px] text-slate-400">
             {totalImageCount}/{MAX_IMAGES}
           </span>
@@ -319,18 +374,19 @@ export default function EditProductModal({
           className="w-full border-2 border-dashed border-slate-200 rounded-lg px-4 py-4 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           <div className="text-lg mb-0.5">📷</div>
+
           <p className="text-xs font-medium text-slate-700">
             Click to upload new images
           </p>
+
           <p className="text-[10px] text-slate-400 mt-0.5">
             JPG, PNG or WebP · Max 5MB each
           </p>
         </button>
 
-        {/* Unified Image Grid (Server URLs + New Local Uploads) */}
         {totalImageCount > 0 && (
           <div className="grid grid-cols-5 gap-2 mt-3">
-            {/* Existing Server Images */}
+            {/* Existing Images */}
             {existingImages.map(({ url }, index) => (
               <div
                 key={`existing-${url}-${index}`}
@@ -341,9 +397,11 @@ export default function EditProductModal({
                   alt={`Existing product ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
+
                 <span className="absolute bottom-1 left-1 bg-slate-900/60 text-white text-[9px] px-1 rounded backdrop-blur-xs">
                   Saved
                 </span>
+
                 <button
                   type="button"
                   onClick={() => removeExistingImage(index)}
@@ -355,7 +413,7 @@ export default function EditProductModal({
               </div>
             ))}
 
-            {/* Newly Added Local Files */}
+            {/* New Images */}
             {newPreviews.map((preview, index) => (
               <div
                 key={`new-${preview}-${index}`}
@@ -366,9 +424,11 @@ export default function EditProductModal({
                   alt={`New upload preview ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
+
                 <span className="absolute bottom-1 left-1 bg-blue-600 text-white text-[9px] px-1 rounded font-medium">
                   New
                 </span>
+
                 <button
                   type="button"
                   onClick={() => removeNewImage(index)}
@@ -383,12 +443,13 @@ export default function EditProductModal({
         )}
       </div>
 
-      {/* Unit of Measure Group */}
+      {/* Unit of Measure */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
         <div>
           <label className="block text-[11px] font-semibold text-slate-700 mb-1">
             UOM Type
           </label>
+
           <select
             name="uom_type"
             value={formData.uom_type}
@@ -397,7 +458,9 @@ export default function EditProductModal({
             className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 transition-all cursor-pointer"
           >
             <option value={UomType.UNIT}>UNIT</option>
+
             <option value={UomType.WEIGHT}>WEIGHT</option>
+
             <option value={UomType.VOLUME}>VOLUME</option>
           </select>
         </div>
@@ -406,6 +469,7 @@ export default function EditProductModal({
           <label className="block text-[11px] font-semibold text-slate-700 mb-1">
             Base Unit
           </label>
+
           <input
             type="text"
             readOnly
@@ -418,8 +482,8 @@ export default function EditProductModal({
           <label className="block text-[11px] font-semibold text-slate-700 mb-1">
             Display Unit
           </label>
+
           <input
-            name="uom_display_name"
             type="text"
             readOnly
             value={formData.uom_display_name.toLocaleUpperCase()}
@@ -428,26 +492,13 @@ export default function EditProductModal({
         </div>
       </div>
 
-      {/* Stock & Cost */}
+      {/* Pricing */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Reorder Level ({formData.uom_base_name})
+            Cost Price (₦)
           </label>
-          <input
-            type="number"
-            name="reorder_level"
-            min="0"
-            step={formData.uom_type === UomType.UNIT ? '1' : 'any'}
-            value={formData.reorder_level}
-            onChange={handleInputChange}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Cost Price ($)
-          </label>
+
           <input
             type="number"
             name="cost_price"
@@ -455,17 +506,25 @@ export default function EditProductModal({
             min="0"
             value={formData.cost_price}
             onChange={handleInputChange}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all"
+            className={`w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden transition-all ${
+              fieldErrors.cost_price
+                ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
+                : 'border-slate-200 focus:border-blue-500 focus:bg-white'
+            }`}
           />
-        </div>
-      </div>
 
-      {/* Pricing */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {fieldErrors.cost_price && (
+            <p className="text-[11px] text-rose-600 mt-1 font-medium">
+              {fieldErrors.cost_price}
+            </p>
+          )}
+        </div>
+
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Retail Price ($) <span className="text-rose-500">*</span>
+            Selling Price (₦) <span className="text-rose-500">*</span>
           </label>
+
           <input
             type="number"
             name="selling_price"
@@ -479,28 +538,34 @@ export default function EditProductModal({
                 : 'border-slate-200 focus:border-blue-500 focus:bg-white'
             }`}
           />
+
           {fieldErrors.selling_price && (
             <p className="text-[11px] text-rose-600 mt-1 font-medium">
               {fieldErrors.selling_price}
             </p>
           )}
         </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-            Product Active Status
-          </label>
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleInputChange}
-            disabled={isSubmitting}
-            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 transition-all cursor-pointer"
-          >
-            <option value={ProductStatus.ACTIVE}>ACTIVE</option>
-            <option value={ProductStatus.INACTIVE}>INACTIVE</option>
-            <option value={ProductStatus.ARCHIVED}>ARCHIVED</option>
-          </select>
-        </div>
+      </div>
+
+      {/* Product Status */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+          Product Status
+        </label>
+
+        <select
+          name="status"
+          value={formData.status}
+          onChange={handleInputChange}
+          disabled={isSubmitting}
+          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-hidden focus:border-blue-500 transition-all cursor-pointer"
+        >
+          <option value={ProductStatus.ACTIVE}>ACTIVE</option>
+
+          <option value={ProductStatus.INACTIVE}>INACTIVE</option>
+
+          <option value={ProductStatus.ARCHIVED}>ARCHIVED</option>
+        </select>
       </div>
     </BaseModal>
   );
